@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zadoni Gestão Financeira Pessoal</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="modules/calc.js" defer></script>
+  <script src="modules/data.js" defer></script>
+  <script src="modules/ui.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="topbar no-print">
+    <h1>Zadoni Gestão Financeira Pessoal</h1>
+    <p>Painel independente para lançar, revisar e acompanhar seus gastos pessoais.</p>
+  </header>
+
+  <main class="container">
+    <section class="screen is-active" data-screen="personal">
+      <section class="card">
+        <h2>Controle Financeiro Pessoal</h2>
+        <p class="muted">Registre entradas e saídas, acompanhe a saúde financeira e gerencie fontes.</p>
+
+        <form id="personalForm" class="grid">
+          <label>
+            Data
+            <input type="date" id="personalDate" required />
+          </label>
+          <label>
+            Tipo
+            <select id="personalType" required>
+              <option value="">Selecione</option>
+              <option value="entry">Entrada</option>
+              <option value="exit">Saída</option>
+            </select>
+          </label>
+          <label>
+            Categoria
+            <select id="personalCategory" required>
+              <option value="">Selecione</option>
+              <option value="Renda">Renda</option>
+              <option value="Alimentação">Alimentação</option>
+              <option value="Transporte">Transporte</option>
+              <option value="Moradia">Moradia</option>
+              <option value="Saúde">Saúde</option>
+              <option value="Educação">Educação</option>
+              <option value="Lazer">Lazer</option>
+              <option value="Dívidas">Dívidas</option>
+              <option value="Outros">Outros</option>
+            </select>
+          </label>
+          <label>
+            Valor (R$)
+            <input type="number" id="personalAmount" min="0.01" step="0.01" required />
+          </label>
+          <label>
+            Observação
+            <input type="text" id="personalNotes" placeholder="Opcional" />
+          </label>
+          <label class="inline">
+            <input type="checkbox" id="personalUseBusinessFunds" />
+            <span>Usar saldo de Pró-labore</span>
+          </label>
+          <label>
+            Fonte (obrigatório se não usar saldo de Pró-labore)
+            <input type="text" id="personalFundingSource" placeholder="Ex: renda extra, empréstimo" />
+          </label>
+          <div class="actions">
+            <button type="submit" id="personalSubmitBtn">Salvar Lançamento Pessoal</button>
+            <button type="button" id="personalCancelEdit" class="ghost" hidden>Cancelar edição</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Filtro e Temperatura Financeira</h2>
+        <div class="filters no-print">
+          <label>
+            Data inicial
+            <input type="date" id="personalFilterStartDate" />
+          </label>
+          <label>
+            Data final
+            <input type="date" id="personalFilterEndDate" />
+          </label>
+          <div class="actions-inline">
+            <button type="button" id="personalApplyFilters">Aplicar filtro pessoal</button>
+            <button type="button" id="personalClearFilters" class="ghost">Limpar</button>
+          </div>
+        </div>
+
+        <div class="kpis">
+          <article><span>Entradas</span><strong id="personalKpiEntries">R$ 0,00</strong></article>
+          <article><span>Saídas</span><strong id="personalKpiExits">R$ 0,00</strong></article>
+          <article><span>Saldo Pessoal</span><strong id="personalKpiBalance">R$ 0,00</strong></article>
+          <article><span>Índice de Saúde</span><strong id="personalKpiHealth">0,00%</strong></article>
+          <article><span>Meta Caixa (mín.)</span><strong id="personalKpiMeta">R$ 5.000,00</strong></article>
+          <article><span>Falta para Meta</span><strong id="personalKpiShortage">R$ 0,00</strong></article>
+        </div>
+        <div class="actions-inline" style="margin-top:10px;">
+          <button type="button" id="personalReserveBtn" class="ghost">Reservar Meta Caixa</button>
+          <button type="button" id="personalEditMetaBtn" class="ghost">Editar Meta Caixa</button>
+        </div>
+        <p id="personalTemperatureLabel" class="traffic-light neutral">Temperatura financeira aguardando dados.</p>
+      </section>
+
+      <section class="card">
+        <h2>Comportamento ao Longo do Tempo</h2>
+        <div class="dash-grid">
+          <div class="chart-card">
+            <h3 class="chart-title">Relógio de Temperatura Financeira</h3>
+            <canvas id="personalGaugeChart" height="260"></canvas>
+            <div class="gauge-legend">
+              <div class="chip chip-red">Crítico</div>
+              <div class="chip chip-yellow">Atenção</div>
+              <div class="chip chip-green">Saudável</div>
+            </div>
+            <div class="gauge-status">
+              <div id="personalGaugeStatus" class="status-label">Estado: -</div>
+              <div id="personalGaugeAdvice" class="status-advice">Aguardando dados.</div>
+            </div>
+            <div class="gauge-stats">
+              <div class="stat-box">
+                <span>Entradas</span>
+                <strong id="personalGaugeEntries">R$ 0,00</strong>
+              </div>
+              <div class="stat-box">
+                <span>Saídas</span>
+                <strong id="personalGaugeExits">R$ 0,00</strong>
+              </div>
+              <div class="stat-box">
+                <span>Saldo</span>
+                <strong id="personalGaugeBalance">R$ 0,00</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <h3 class="chart-title">Tendência de Entradas, Saídas e Saldo</h3>
+            <canvas id="personalTimelineChart" height="260"></canvas>
+          </div>
+
+          <div class="chart-card">
+            <h3 class="chart-title">Top Categorias de Saída</h3>
+            <canvas id="personalCategoryChart" height="260"></canvas>
+          </div>
+
+          <div class="chart-card">
+            <h3 class="chart-title">Fontes das Saídas</h3>
+            <canvas id="personalFundingChart" height="260"></canvas>
+            <p class="chart-note" id="personalFundingNote">Mostra quanto das saídas veio do Pró-labore vs outras fontes.</p>
+          </div>
+
+          <div class="chart-card">
+            <h3 class="chart-title">Evolução da Meta Mínima</h3>
+            <canvas id="personalMetaEvolutionChart" height="200"></canvas>
+            <p class="chart-note">Histórico de alterações do valor mínimo da Meta Caixa.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Histórico Pessoal</h2>
+        <div class="table-wrap">
+          <table id="personalTable" class="mobile-card-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Categoria</th>
+                <th>Valor</th>
+                <th>Obs.</th>
+                <th>Fonte</th>
+                <th class="no-print">Ação</th>
+              </tr>
+            </thead>
+            <tbody id="personalTableBody">
+              <tr><td colspan="7">Nenhum lançamento pessoal cadastrado.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="actions no-print">
+          <button type="button" id="clearPersonalTransactions" class="danger">Limpar Lançamentos Pessoais</button>
+        </div>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
