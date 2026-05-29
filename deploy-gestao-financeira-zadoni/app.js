@@ -546,6 +546,17 @@
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       });
       ctx.stroke();
+      line.values.forEach(function (v, i) {
+        const x = axis.left + (stepX * i);
+        const y = valueToY(v);
+        ctx.beginPath();
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = line.color;
+        ctx.lineWidth = 2;
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      });
     });
 
     canvas._lineChartData = {
@@ -915,12 +926,19 @@
   function renderMetaEvolution(canvas, history) {
     if (!canvas) return;
     history = Array.isArray(history) ? history : [];
-    if (!history.length) {
-      drawEmptyCanvas(canvas, 'Nenhuma alteração de meta registrada');
-      return;
+    const cleanHistory = history
+      .map(function (h) {
+        return {
+          ts: String((h && h.ts) || new Date().toISOString()),
+          value: Number((h && h.value) || 0)
+        };
+      })
+      .filter(function (h) { return h.value > 0; });
+    if (!cleanHistory.length) {
+      cleanHistory.push({ ts: new Date().toISOString(), value: Number(metaCaixaMin || 0) });
     }
-    const labels = history.map(function (h) { return formatDateOnly(h.ts.slice(0,10)); });
-    const values = history.map(function (h) { return Number(h.value || 0); });
+    const labels = cleanHistory.map(function (h) { return formatDateOnly(h.ts.slice(0,10)); });
+    const values = cleanHistory.map(function (h) { return Number(h.value || 0); });
     renderLineChartCanvas(canvas, labels, [ { label: 'Meta Mínima', color: '#0ea5a4', values: values } ]);
   }
 
