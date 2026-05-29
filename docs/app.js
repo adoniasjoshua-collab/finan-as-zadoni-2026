@@ -96,6 +96,26 @@
   const debtStatusChart = document.getElementById('debtStatusChart');
   const debtRabbiGuidance = document.getElementById('debtRabbiGuidance');
   const debtTableBody = document.getElementById('debtTableBody');
+  const consolidatedReportPeriod = document.getElementById('consolidatedReportPeriod');
+  const consolidatedReportGeneratedAt = document.getElementById('consolidatedReportGeneratedAt');
+  const consolidatedReportStartDateInput = document.getElementById('consolidatedReportStartDate');
+  const consolidatedReportEndDateInput = document.getElementById('consolidatedReportEndDate');
+  const applyConsolidatedReportBtn = document.getElementById('applyConsolidatedReport');
+  const clearConsolidatedReportBtn = document.getElementById('clearConsolidatedReport');
+  const exportConsolidatedReportPdfBtn = document.getElementById('exportConsolidatedReportPdf');
+  const reportKpiEntries = document.getElementById('reportKpiEntries');
+  const reportKpiExits = document.getElementById('reportKpiExits');
+  const reportKpiBalance = document.getElementById('reportKpiBalance');
+  const reportKpiHealth = document.getElementById('reportKpiHealth');
+  const reportKpiDebtRemaining = document.getElementById('reportKpiDebtRemaining');
+  const reportKpiDebtProgress = document.getElementById('reportKpiDebtProgress');
+  const reportCashflowChart = document.getElementById('reportCashflowChart');
+  const reportCategoryChart = document.getElementById('reportCategoryChart');
+  const reportDebtChart = document.getElementById('reportDebtChart');
+  const reportDebtStatusChart = document.getElementById('reportDebtStatusChart');
+  const reportExecutiveSummary = document.getElementById('reportExecutiveSummary');
+  const reportTransactionsBody = document.getElementById('reportTransactionsBody');
+  const reportDebtsBody = document.getElementById('reportDebtsBody');
 
   let personalTransactions = [];
   let debts = [];
@@ -265,6 +285,7 @@
     });
     refreshPersonalFinance();
     refreshDebtFreedom();
+    renderConsolidatedReport();
   }
 
   function getPersonalHealthScore(totalEntries, totalExits) {
@@ -1201,6 +1222,7 @@
     saveDebts();
     resetDebtForm();
     refreshDebtFreedom();
+    renderConsolidatedReport();
   }
 
   function handleDebtTableClick(event) {
@@ -1217,7 +1239,149 @@
       debts = debts.filter(function (item) { return item.id !== debtId; });
       saveDebts();
       refreshDebtFreedom();
+      renderConsolidatedReport();
     }
+  }
+
+  function getConsolidatedReportRange() {
+    return {
+      start: consolidatedReportStartDateInput ? consolidatedReportStartDateInput.value : '',
+      end: consolidatedReportEndDateInput ? consolidatedReportEndDateInput.value : ''
+    };
+  }
+
+  function getTransactionsForReport() {
+    const range = getConsolidatedReportRange();
+    return personalTransactions.filter(function (item) {
+      const date = toIsoDate(item.date || item.createdAt);
+      if (range.start && date < range.start) return false;
+      if (range.end && date > range.end) return false;
+      return true;
+    }).sort(function (a, b) {
+      return String(b.date || b.createdAt || '').localeCompare(String(a.date || a.createdAt || ''));
+    });
+  }
+
+  function getDebtsForReport() {
+    const range = getConsolidatedReportRange();
+    if (!range.start && !range.end) return debts.slice();
+    return debts.filter(function (debt) {
+      const dates = [debt.dueDate, debt.nextActionDate, debt.createdAt ? String(debt.createdAt).slice(0, 10) : ''].filter(Boolean);
+      if (!dates.length) return true;
+      return dates.some(function (date) {
+        const iso = toIsoDate(date);
+        if (range.start && iso < range.start) return false;
+        if (range.end && iso > range.end) return false;
+        return true;
+      });
+    });
+  }
+
+  function updateConsolidatedReportHeader(generatedAt) {
+    const range = getConsolidatedReportRange();
+    let period = 'Período: todos os lançamentos';
+    if (range.start && range.end) {
+      period = 'Período: ' + formatDateOnly(range.start) + ' a ' + formatDateOnly(range.end);
+    } else if (range.start) {
+      period = 'Período: a partir de ' + formatDateOnly(range.start);
+    } else if (range.end) {
+      period = 'Período: até ' + formatDateOnly(range.end);
+    }
+    if (consolidatedReportPeriod) consolidatedReportPeriod.textContent = period;
+    if (consolidatedReportGeneratedAt) consolidatedReportGeneratedAt.textContent = 'Gerado em: ' + (generatedAt || new Date()).toLocaleString('pt-BR');
+  }
+
+  function renderReportTransactions(list) {
+    if (!reportTransactionsBody) return;
+    if (!list.length) {
+      reportTransactionsBody.innerHTML = '<tr><td colspan="5">Nenhum lançamento no período.</td></tr>';
+      return;
+    }
+    reportTransactionsBody.innerHTML = list.map(function (item) {
+      const source = item.usesBusinessFunds ? 'Pró-labore' : (item.fundingSource || item.notes || '-');
+      return '<tr>' +
+        '<td>' + formatDateOnly(item.date || item.createdAt) + '</td>' +
+        '<td>' + (item.type === 'entry' ? 'Entrada' : 'Saída') + '</td>' +
+        '<td>' + escapeHtml(item.category || '-') + '</td>' +
+        '<td>' + toMoney(item.amount) + '</td>' +
+        '<td>' + escapeHtml(source) + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  function renderReportDebts(list) {
+    if (!reportDebtsBody) return;
+    if (!list.length) {
+      reportDebtsBody.innerHTML = '<tr><td colspan="6">Nenhum credor cadastrado no recorte.</td></tr>';
+      return;
+    }
+    reportDebtsBody.innerHTML = list.map(function (debt) {
+      return '<tr>' +
+        '<td>' + escapeHtml(debt.creditor || '-') + '</td>' +
+        '<td>' + escapeHtml(debt.status || '-') + '</td>' +
+        '<td>' + toMoney(getDebtBaseAmount(debt)) + '</td>' +
+        '<td>' + toMoney(debt.paidAmount) + '</td>' +
+        '<td>' + toMoney(getDebtRemaining(debt)) + '</td>' +
+        '<td>' + (debt.nextActionDate ? formatDateOnly(debt.nextActionDate) : '-') + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  function renderConsolidatedReport() {
+    updateConsolidatedReportHeader();
+    const list = getTransactionsForReport();
+    const reportDebts = getDebtsForReport();
+    const entries = list.filter(function (item) { return item.type === 'entry'; }).reduce(function (acc, item) { return acc + Number(item.amount || 0); }, 0);
+    const exits = list.filter(function (item) { return item.type !== 'entry'; }).reduce(function (acc, item) { return acc + Number(item.amount || 0); }, 0);
+    const balance = entries - exits;
+    const health = getPersonalHealthScore(entries, exits);
+    const debtRemaining = reportDebts.reduce(function (acc, debt) { return acc + getDebtRemaining(debt); }, 0);
+    const debtBase = reportDebts.reduce(function (acc, debt) { return acc + getDebtBaseAmount(debt); }, 0);
+    const debtPaid = reportDebts.reduce(function (acc, debt) { return acc + Math.min(Number(debt.paidAmount || 0), getDebtBaseAmount(debt)); }, 0);
+    const debtProgress = debtBase > 0 ? Math.round((debtPaid / debtBase) * 100) : 0;
+
+    if (reportKpiEntries) reportKpiEntries.textContent = toMoney(entries);
+    if (reportKpiExits) reportKpiExits.textContent = toMoney(exits);
+    if (reportKpiBalance) reportKpiBalance.textContent = toMoney(balance);
+    if (reportKpiHealth) reportKpiHealth.textContent = toPercent(health);
+    if (reportKpiDebtRemaining) reportKpiDebtRemaining.textContent = toMoney(debtRemaining);
+    if (reportKpiDebtProgress) reportKpiDebtProgress.textContent = debtProgress + '%';
+
+    renderHorizontalBarChart(reportCashflowChart, [
+      { label: 'Entradas', value: entries },
+      { label: 'Saídas', value: exits },
+      { label: 'Saldo', value: Math.max(balance, 0) }
+    ], 'Sem lançamentos no período');
+    renderHorizontalBarChart(reportCategoryChart, buildPersonalExitCategories(list), 'Sem saídas no período');
+    renderHorizontalBarChart(reportDebtChart, [
+      { label: 'Negociado', value: debtBase },
+      { label: 'Pago', value: debtPaid },
+      { label: 'Falta', value: debtRemaining }
+    ], 'Sem dívidas no recorte');
+    const statusGrouped = {};
+    reportDebts.forEach(function (debt) {
+      const key = String(debt.status || 'Atrasado');
+      statusGrouped[key] = (statusGrouped[key] || 0) + 1;
+    });
+    renderHorizontalBarChart(reportDebtStatusChart, Object.keys(statusGrouped).map(function (key) {
+      return { label: key, value: statusGrouped[key] };
+    }), 'Sem status no recorte');
+
+    const summary = [];
+    summary.push({ tone: balance >= 0 ? 'ok' : 'critical', title: balance >= 0 ? 'Saldo positivo no período' : 'Saldo negativo no período', text: 'O resultado consolidado foi ' + toMoney(balance) + '. Este é o primeiro número para a conversa do casal.' });
+    summary.push({ tone: health >= PERSONAL_HEALTH_THRESHOLDS.yellow ? 'ok' : 'warning', title: 'Temperatura financeira', text: 'A saúde do período ficou em ' + toPercent(health) + '. Abaixo de 70% pede contenção e prioridade.' });
+    summary.push({ tone: debtRemaining > 0 ? 'warning' : 'ok', title: 'Dívidas no relatório', text: debtRemaining > 0 ? 'Ainda faltam ' + toMoney(debtRemaining) + ' para quitar no recorte de credores.' : 'Não há saldo pendente nos credores do recorte.' });
+    summary.push({ tone: 'neutral', title: 'Próxima decisão', text: balance > 0 && debtRemaining > 0 ? 'Direcionar parte do saldo positivo para acordos sem quebrar a Meta Caixa.' : 'Usar este relatório na reunião semanal para ajustar limites e próximos pagamentos.' });
+    renderWisdomCards(reportExecutiveSummary, summary, 'Gere o relatório para ver a leitura executiva.');
+    renderReportTransactions(list);
+    renderReportDebts(reportDebts);
+  }
+
+  function handleExportConsolidatedReportPdf() {
+    activateScreen('reports');
+    renderConsolidatedReport();
+    updateConsolidatedReportHeader(new Date());
+    window.print();
   }
 
   function renderPersonalTable(list) {
@@ -1606,6 +1770,13 @@
     if (personalTableBody) personalTableBody.addEventListener('click', handlePersonalTableClick);
     if (debtTableBody) debtTableBody.addEventListener('click', handleDebtTableClick);
     if (clearPersonalTransactionsBtn) clearPersonalTransactionsBtn.addEventListener('click', handleClearTransactions);
+    if (applyConsolidatedReportBtn) applyConsolidatedReportBtn.addEventListener('click', renderConsolidatedReport);
+    if (clearConsolidatedReportBtn) clearConsolidatedReportBtn.addEventListener('click', function () {
+      if (consolidatedReportStartDateInput) consolidatedReportStartDateInput.value = '';
+      if (consolidatedReportEndDateInput) consolidatedReportEndDateInput.value = '';
+      renderConsolidatedReport();
+    });
+    if (exportConsolidatedReportPdfBtn) exportConsolidatedReportPdfBtn.addEventListener('click', handleExportConsolidatedReportPdf);
     tabButtons.forEach(function (button) {
       button.setAttribute('role', 'tab');
       button.addEventListener('click', function () {
@@ -1617,9 +1788,11 @@
     window.addEventListener('resize', function () {
       refreshPersonalFinance();
       refreshDebtFreedom();
+      renderConsolidatedReport();
     });
     refreshPersonalFinance();
     refreshDebtFreedom();
+    renderConsolidatedReport();
   }
 
   init();

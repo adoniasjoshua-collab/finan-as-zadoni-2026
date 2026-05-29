@@ -20,6 +20,7 @@
     <button type="button" class="tab is-active" data-tab-target="personal">Painel Financeiro</button>
     <button type="button" class="tab" data-tab-target="prosperity">Conselho Zadoni</button>
     <button type="button" class="tab" data-tab-target="debts">Plano Nome Limpo</button>
+    <button type="button" class="tab" data-tab-target="reports">Relatórios</button>
   </nav>
 
   <main class="container">
@@ -383,6 +384,113 @@
             </thead>
             <tbody id="debtTableBody">
               <tr><td colspan="8">Nenhum credor cadastrado.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <section class="screen" data-screen="reports">
+      <section class="report-heading">
+        <h1>Relatório Consolidado Zadoni</h1>
+        <p id="consolidatedReportPeriod">Período: todos os lançamentos</p>
+        <p id="consolidatedReportGeneratedAt">Gerado em: -</p>
+      </section>
+
+      <section class="card no-print">
+        <h2>Gerar Relatório por Período</h2>
+        <div class="filters">
+          <label>
+            Data inicial
+            <input type="date" id="consolidatedReportStartDate" />
+          </label>
+          <label>
+            Data final
+            <input type="date" id="consolidatedReportEndDate" />
+          </label>
+          <div class="actions-inline">
+            <button type="button" id="applyConsolidatedReport">Gerar relatório</button>
+            <button type="button" id="clearConsolidatedReport" class="ghost">Limpar período</button>
+            <button type="button" id="exportConsolidatedReportPdf" class="ghost">Exportar PDF</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Resumo Consolidado</h2>
+        <div class="kpis">
+          <article><span>Entradas no período</span><strong id="reportKpiEntries">R$ 0,00</strong></article>
+          <article><span>Saídas no período</span><strong id="reportKpiExits">R$ 0,00</strong></article>
+          <article><span>Saldo do período</span><strong id="reportKpiBalance">R$ 0,00</strong></article>
+          <article><span>Saúde financeira</span><strong id="reportKpiHealth">0,00%</strong></article>
+          <article><span>Falta quitar em dívidas</span><strong id="reportKpiDebtRemaining">R$ 0,00</strong></article>
+          <article><span>Progresso nome limpo</span><strong id="reportKpiDebtProgress">0%</strong></article>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Gráficos do Relatório</h2>
+        <div class="dash-grid">
+          <div class="chart-card">
+            <h3 class="chart-title">Entradas, Saídas e Saldo</h3>
+            <canvas id="reportCashflowChart" height="240"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3 class="chart-title">Principais Saídas</h3>
+            <canvas id="reportCategoryChart" height="240"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3 class="chart-title">Situação das Dívidas</h3>
+            <canvas id="reportDebtChart" height="240"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3 class="chart-title">Dívidas por Status</h3>
+            <canvas id="reportDebtStatusChart" height="240"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Leitura Executiva</h2>
+        <div id="reportExecutiveSummary" class="wisdom-list"></div>
+      </section>
+
+      <section class="card">
+        <h2>Lançamentos do Período</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Categoria</th>
+                <th>Valor</th>
+                <th>Fonte/Obs.</th>
+              </tr>
+            </thead>
+            <tbody id="reportTransactionsBody">
+              <tr><td colspan="5">Nenhum lançamento no período.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Credores e Acordos</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Credor</th>
+                <th>Status</th>
+                <th>Negociado</th>
+                <th>Pago</th>
+                <th>Falta</th>
+                <th>Próxima ação</th>
+              </tr>
+            </thead>
+            <tbody id="reportDebtsBody">
+              <tr><td colspan="6">Nenhum credor cadastrado.</td></tr>
             </tbody>
           </table>
         </div>

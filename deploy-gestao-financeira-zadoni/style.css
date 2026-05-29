@@ -1232,7 +1232,10 @@ th {
     margin: 0;
   }
 
-  .screen,
+  .screen {
+    display: none;
+  }
+
   .screen.is-active {
     display: block;
   }
