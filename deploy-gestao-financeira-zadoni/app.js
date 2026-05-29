@@ -25,6 +25,9 @@
   const personalFilterEndDateInput = document.getElementById('personalFilterEndDate');
   const personalApplyFiltersBtn = document.getElementById('personalApplyFilters');
   const personalClearFiltersBtn = document.getElementById('personalClearFilters');
+  const exportReportPdfBtn = document.getElementById('exportReportPdf');
+  const reportPeriodLabel = document.getElementById('reportPeriodLabel');
+  const reportGeneratedAt = document.getElementById('reportGeneratedAt');
   const personalKpiEntries = document.getElementById('personalKpiEntries');
   const personalKpiExits = document.getElementById('personalKpiExits');
   const personalKpiBalance = document.getElementById('personalKpiBalance');
@@ -53,6 +56,7 @@
   let metaCaixaMin = 5000; // valor mínimo recomendado para meta caixa
   let reservedAmount = 0; // indicador de valor reservado (apenas sinalização local)
   let metaHistory = [];
+  let printOpenedDetails = [];
 
   function generateId() {
     return 'pt-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
@@ -155,6 +159,47 @@
     if (diffDays <= 45) return 'day';
     if (diffDays <= 180) return 'week';
     return 'month';
+  }
+
+  function updateReportInfo(generatedAt) {
+    const start = personalFilterStartDateInput ? personalFilterStartDateInput.value : '';
+    const end = personalFilterEndDateInput ? personalFilterEndDateInput.value : '';
+    let period = 'Período: todos os lançamentos';
+    if (start && end) {
+      period = 'Período: ' + formatDateOnly(start) + ' a ' + formatDateOnly(end);
+    } else if (start) {
+      period = 'Período: a partir de ' + formatDateOnly(start);
+    } else if (end) {
+      period = 'Período: até ' + formatDateOnly(end);
+    }
+    if (reportPeriodLabel) reportPeriodLabel.textContent = period;
+    if (reportGeneratedAt) {
+      const date = generatedAt || new Date();
+      reportGeneratedAt.textContent = 'Gerado em: ' + date.toLocaleString('pt-BR');
+    }
+  }
+
+  function handleExportReportPdf() {
+    updateReportInfo(new Date());
+    window.print();
+  }
+
+  function preparePrintReport() {
+    updateReportInfo(new Date());
+    printOpenedDetails = [];
+    document.querySelectorAll('details').forEach(function (details) {
+      if (!details.open) {
+        printOpenedDetails.push(details);
+        details.open = true;
+      }
+    });
+  }
+
+  function restorePrintReport() {
+    printOpenedDetails.forEach(function (details) {
+      details.open = false;
+    });
+    printOpenedDetails = [];
   }
 
   function getPersonalHealthScore(totalEntries, totalExits) {
@@ -759,6 +804,7 @@
     if (personalGaugeEntries) personalGaugeEntries.textContent = toMoney(entries);
     if (personalGaugeExits) personalGaugeExits.textContent = toMoney(exits);
     if (personalGaugeBalance) personalGaugeBalance.textContent = toMoney(balance);
+    updateReportInfo();
 
     // Meta Caixa: compute across all transactions (not only filtered)
     const totalBalance = getTotalBalanceAll();
@@ -1080,8 +1126,11 @@
       savePersonalFilters();
       refreshPersonalFinance();
     });
+    if (exportReportPdfBtn) exportReportPdfBtn.addEventListener('click', handleExportReportPdf);
     if (personalTableBody) personalTableBody.addEventListener('click', handlePersonalTableClick);
     if (clearPersonalTransactionsBtn) clearPersonalTransactionsBtn.addEventListener('click', handleClearTransactions);
+    window.addEventListener('beforeprint', preparePrintReport);
+    window.addEventListener('afterprint', restorePrintReport);
     window.addEventListener('resize', function () {
       refreshPersonalFinance();
     });

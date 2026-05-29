@@ -18,7 +18,13 @@
 
   <main class="container">
     <section class="screen is-active" data-screen="personal">
-      <section class="card">
+      <section class="report-heading print-only">
+        <h1>Relatório Financeiro Pessoal</h1>
+        <p id="reportPeriodLabel">Período: todos os lançamentos</p>
+        <p id="reportGeneratedAt">Gerado em: -</p>
+      </section>
+
+      <section class="card no-print">
         <h2>Controle Financeiro Pessoal</h2>
         <p class="muted">Registre entradas e saídas, acompanhe a saúde financeira e gerencie fontes.</p>
 
@@ -48,6 +54,7 @@
               <option value="Lazer">Lazer</option>
               <option value="Dívidas">Dívidas</option>
               <option value="Recompra para negócio">Recompra para negócio</option>
+              <option value="Tráfego pago">Tráfego pago</option>
               <option value="Roupas">Roupas</option>
               <option value="Beleza">Beleza</option>
               <option value="Cuidados pessoais">Cuidados pessoais</option>
@@ -91,6 +98,7 @@
           <div class="actions-inline">
             <button type="button" id="personalApplyFilters">Aplicar filtro pessoal</button>
             <button type="button" id="personalClearFilters" class="ghost">Limpar</button>
+            <button type="button" id="exportReportPdf" class="ghost">Exportar PDF</button>
           </div>
         </div>
 
