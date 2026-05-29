@@ -16,6 +16,11 @@
     <p>Painel independente para lançar, revisar e acompanhar seus gastos pessoais.</p>
   </header>
 
+  <nav class="tabs no-print" aria-label="Navegação principal">
+    <button type="button" class="tab is-active" data-tab-target="personal">Painel Financeiro</button>
+    <button type="button" class="tab" data-tab-target="prosperity">Conselho Zadoni</button>
+  </nav>
+
   <main class="container">
     <section class="screen is-active" data-screen="personal">
       <section class="report-heading print-only">
@@ -199,6 +204,58 @@
         <div class="actions no-print">
           <button type="button" id="clearPersonalTransactions" class="danger">Limpar Lançamentos Pessoais</button>
         </div>
+      </section>
+    </section>
+
+    <section class="screen" data-screen="prosperity">
+      <section class="card wisdom-hero">
+        <div>
+          <span id="wisdomStatusPill" class="wisdom-pill neutral">Aguardando leitura</span>
+          <h2>Conselho Financeiro Zadoni</h2>
+          <p id="wisdomSummary">Registre entradas e saídas para receber uma orientação financeira dinâmica.</p>
+        </div>
+        <div class="wisdom-score">
+          <span>Temperatura</span>
+          <strong id="wisdomScore">0%</strong>
+        </div>
+      </section>
+
+      <section class="advice-grid">
+        <article class="advice-card">
+          <span>Próxima ação</span>
+          <strong id="wisdomNextAction">Registrar o mês atual</strong>
+          <p id="wisdomNextActionDetail">A clareza vem antes da decisão.</p>
+        </article>
+        <article class="advice-card">
+          <span>Pacto do casal</span>
+          <strong id="wisdomCouplePact">Conversa semanal de 20 minutos</strong>
+          <p id="wisdomCouplePactDetail">Decidam juntos, sem culpa e sem improviso.</p>
+        </article>
+        <article class="advice-card">
+          <span>Princípio do mês</span>
+          <strong id="wisdomPrinciple">Ordem antes de expansão</strong>
+          <p id="wisdomPrincipleDetail">Prosperidade sustentável nasce de limites claros.</p>
+        </article>
+      </section>
+
+      <section class="card">
+        <h2>Alertas Dinâmicos</h2>
+        <div id="wisdomAlerts" class="wisdom-list">
+          <article class="wisdom-item neutral">
+            <strong>Aguardando dados</strong>
+            <p>Os alertas aparecem conforme os lançamentos do período selecionado.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Mapa de Prioridades</h2>
+        <div id="wisdomPriorities" class="priority-list"></div>
+      </section>
+
+      <section class="card">
+        <h2>Leitura Judaica da Prosperidade</h2>
+        <div id="wisdomPrinciples" class="principles-grid"></div>
       </section>
     </section>
   </main>

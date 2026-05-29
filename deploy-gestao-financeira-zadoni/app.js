@@ -10,7 +10,14 @@
   const DataModule = ZadoniModules.data || {};
   const UiModule = ZadoniModules.ui || {};
   const PERSONAL_HEALTH_THRESHOLDS = { red: 45, yellow: 70 };
+  const GIVING_CATEGORIES = ['Dízimos', 'Doações', 'Oferta'];
+  const INVESTMENT_CATEGORIES = ['Investimentos'];
+  const LIFESTYLE_CATEGORIES = ['Roupas', 'Beleza', 'Cuidados pessoais', 'Lazer'];
+  const BUSINESS_GROWTH_CATEGORIES = ['Recompra para negócio', 'Tráfego pago'];
+  const DEBT_CATEGORIES = ['Dívidas'];
 
+  const tabButtons = Array.prototype.slice.call(document.querySelectorAll('[data-tab-target]'));
+  const screens = Array.prototype.slice.call(document.querySelectorAll('[data-screen]'));
   const personalForm = document.getElementById('personalForm');
   const personalDateInput = document.getElementById('personalDate');
   const personalTypeInput = document.getElementById('personalType');
@@ -50,6 +57,18 @@
   const personalMetaEvolutionChart = document.getElementById('personalMetaEvolutionChart');
   const personalTableBody = document.getElementById('personalTableBody');
   const clearPersonalTransactionsBtn = document.getElementById('clearPersonalTransactions');
+  const wisdomStatusPill = document.getElementById('wisdomStatusPill');
+  const wisdomSummary = document.getElementById('wisdomSummary');
+  const wisdomScore = document.getElementById('wisdomScore');
+  const wisdomNextAction = document.getElementById('wisdomNextAction');
+  const wisdomNextActionDetail = document.getElementById('wisdomNextActionDetail');
+  const wisdomCouplePact = document.getElementById('wisdomCouplePact');
+  const wisdomCouplePactDetail = document.getElementById('wisdomCouplePactDetail');
+  const wisdomPrinciple = document.getElementById('wisdomPrinciple');
+  const wisdomPrincipleDetail = document.getElementById('wisdomPrincipleDetail');
+  const wisdomAlerts = document.getElementById('wisdomAlerts');
+  const wisdomPriorities = document.getElementById('wisdomPriorities');
+  const wisdomPrinciples = document.getElementById('wisdomPrinciples');
 
   let personalTransactions = [];
   let editingPersonalId = '';
@@ -200,6 +219,22 @@
       details.open = false;
     });
     printOpenedDetails = [];
+  }
+
+  function activateScreen(screenName) {
+    screens.forEach(function (screen) {
+      if (screen.getAttribute('data-screen') === screenName) {
+        screen.classList.add('is-active');
+      } else {
+        screen.classList.remove('is-active');
+      }
+    });
+    tabButtons.forEach(function (button) {
+      const isActive = button.getAttribute('data-tab-target') === screenName;
+      button.classList.toggle('is-active', isActive);
+      button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+    refreshPersonalFinance();
   }
 
   function getPersonalHealthScore(totalEntries, totalExits) {
@@ -757,6 +792,143 @@
     return { labels: labels, values: values, business: business, otherTotal: totalOther };
   }
 
+  function sumExitCategories(list, categories) {
+    return list.filter(function (item) {
+      return item.type === 'exit' && categories.indexOf(String(item.category || '')) >= 0;
+    }).reduce(function (acc, item) {
+      return acc + Number(item.amount || 0);
+    }, 0);
+  }
+
+  function renderWisdomCards(container, items, emptyText) {
+    if (!container) return;
+    if (!items.length) {
+      container.innerHTML = '<article class="wisdom-item neutral"><strong>Aguardando dados</strong><p>' + escapeHtml(emptyText) + '</p></article>';
+      return;
+    }
+    container.innerHTML = items.map(function (item) {
+      return '<article class="wisdom-item ' + escapeHtml(item.tone || 'neutral') + '">' +
+        '<strong>' + escapeHtml(item.title) + '</strong>' +
+        '<p>' + escapeHtml(item.text) + '</p>' +
+      '</article>';
+    }).join('');
+  }
+
+  function renderPriorities(items) {
+    if (!wisdomPriorities) return;
+    wisdomPriorities.innerHTML = items.map(function (item, index) {
+      return '<article class="priority-item">' +
+        '<span>' + (index + 1) + '</span>' +
+        '<div><strong>' + escapeHtml(item.title) + '</strong><p>' + escapeHtml(item.text) + '</p></div>' +
+      '</article>';
+    }).join('');
+  }
+
+  function renderProsperityGuidance(list, metrics) {
+    if (!wisdomSummary && !wisdomAlerts && !wisdomPriorities) return;
+    const entries = Number(metrics.entries || 0);
+    const exits = Number(metrics.exits || 0);
+    const balance = Number(metrics.balance || 0);
+    const score = Number(metrics.score || 0);
+    const shortage = Number(metrics.shortage || 0);
+    const giving = sumExitCategories(list, GIVING_CATEGORIES);
+    const investments = sumExitCategories(list, INVESTMENT_CATEGORIES);
+    const lifestyle = sumExitCategories(list, LIFESTYLE_CATEGORIES);
+    const businessGrowth = sumExitCategories(list, BUSINESS_GROWTH_CATEGORIES);
+    const debt = sumExitCategories(list, DEBT_CATEGORIES);
+    const exitsBase = Math.max(exits, 1);
+    const entriesBase = Math.max(entries, 1);
+    let tone = 'neutral';
+    let status = 'Em leitura';
+    let summary = 'Registre entradas e saídas para enxergar o caminho financeiro do casal.';
+
+    if (list.length === 0) {
+      tone = 'neutral';
+      status = 'Sem dados no período';
+    } else if (balance < 0 || score < PERSONAL_HEALTH_THRESHOLDS.red) {
+      tone = 'critical';
+      status = 'Correção urgente';
+      summary = 'As saídas estão pressionando a casa. A prioridade é proteger a paz do casal, cortar vazamentos e recuperar caixa.';
+    } else if (shortage > 0 || score < PERSONAL_HEALTH_THRESHOLDS.yellow) {
+      tone = 'warning';
+      status = 'Atenção e disciplina';
+      summary = 'Há progresso, mas o caixa ainda pede vigilância. A prosperidade aqui depende de limites claros e decisão conjunta.';
+    } else {
+      tone = 'ok';
+      status = 'Base saudável';
+      summary = 'O período mostra equilíbrio. O próximo nível é fortalecer reserva, investimento e generosidade com constância.';
+    }
+
+    if (wisdomStatusPill) {
+      wisdomStatusPill.className = 'wisdom-pill ' + tone;
+      wisdomStatusPill.textContent = status;
+    }
+    if (wisdomSummary) wisdomSummary.textContent = summary;
+    if (wisdomScore) wisdomScore.textContent = Math.round(score) + '%';
+
+    const alerts = [];
+    if (list.length === 0) {
+      alerts.push({ tone: 'neutral', title: 'Primeira clareza', text: 'Sem lançamentos no período, não há conselho confiável. Comece registrando todas as entradas e saídas.' });
+    }
+    if (balance < 0) {
+      alerts.push({ tone: 'critical', title: 'Saldo negativo exige contenção', text: 'Antes de expandir, interrompa gastos não essenciais e combine um teto de despesas até o saldo voltar ao positivo.' });
+    }
+    if (exits > entries && entries > 0) {
+      alerts.push({ tone: 'critical', title: 'As saídas passaram das entradas', text: 'O lar não deve depender de improviso. Revisem juntos as maiores categorias de saída ainda esta semana.' });
+    }
+    if (shortage > 0) {
+      alerts.push({ tone: 'warning', title: 'Meta Caixa desprotegida', text: 'Faltam ' + toMoney(shortage) + ' para a meta mínima. Trate essa recomposição como prioridade antes de novos confortos.' });
+    }
+    if (debt > 0) {
+      alerts.push({ tone: debt / entriesBase > 0.15 ? 'warning' : 'neutral', title: 'Dívidas precisam de plano', text: 'Há ' + toMoney(debt) + ' em dívidas no período. Liste juros, vencimentos e quite primeiro o que destrói caixa mais rápido.' });
+    }
+    if (investments <= 0 && entries > 0 && balance > 0) {
+      alerts.push({ tone: 'warning', title: 'O futuro ainda não foi pago', text: 'Houve saldo positivo, mas nenhum investimento registrado. Separe uma parte pequena e constante antes do dinheiro se dispersar.' });
+    }
+    if (giving <= 0 && entries > 0) {
+      alerts.push({ tone: 'neutral', title: 'Generosidade planejada', text: 'Dízimos, ofertas e doações ficam mais fortes quando nascem de ordem, não de culpa. Definam um percentual possível e fiel.' });
+    }
+    if (lifestyle / exitsBase > 0.25 && balance <= 0) {
+      alerts.push({ tone: 'warning', title: 'Estilo de vida pressionando o caixa', text: 'Roupas, beleza, cuidados pessoais e lazer estão altos para o momento. Reduzam temporariamente para preservar a casa.' });
+    }
+    if (businessGrowth > 0) {
+      alerts.push({ tone: businessGrowth / exitsBase > 0.35 && balance < 0 ? 'warning' : 'ok', title: 'Crescimento precisa de retorno', text: 'Recompra e tráfego pago somam ' + toMoney(businessGrowth) + '. Acompanhem retorno, prazo e caixa antes de reinvestir automaticamente.' });
+    }
+    if (score >= PERSONAL_HEALTH_THRESHOLDS.yellow && shortage <= 0 && investments > 0 && giving > 0) {
+      alerts.push({ tone: 'ok', title: 'Equilíbrio maduro', text: 'Há sinais bons: caixa protegido, investimento e generosidade aparecem juntos. Mantenham constância antes de aumentar o padrão.' });
+    }
+
+    renderWisdomCards(wisdomAlerts, alerts, 'Os alertas aparecem conforme os lançamentos do período selecionado.');
+
+    const priorities = [];
+    priorities.push(shortage > 0
+      ? { title: 'Recompor Meta Caixa', text: 'Direcionar excedentes para cobrir os ' + toMoney(shortage) + ' faltantes antes de elevar gastos variáveis.' }
+      : { title: 'Preservar a reserva', text: 'Manter a Meta Caixa protegida e evitar usar reserva para despesas previsíveis.' });
+    if (debt > 0) priorities.push({ title: 'Atacar dívidas', text: 'Criar uma ordem de quitação por juros e vencimento, com valor fixo mensal.' });
+    priorities.push(investments > 0
+      ? { title: 'Aumentar investimento com prudência', text: 'Investimentos somam ' + toMoney(investments) + '. Aumente apenas se a reserva e o caixa seguirem saudáveis.' }
+      : { title: 'Criar semente de investimento', text: 'Começar com um valor pequeno e recorrente. Constância educa melhor que grandes impulsos.' });
+    priorities.push(giving > 0
+      ? { title: 'Manter generosidade ordenada', text: 'Dízimos, ofertas e doações somam ' + toMoney(giving) + '. Mantenham como decisão do casal dentro do orçamento.' }
+      : { title: 'Planejar tzedakah', text: 'Separar generosidade possível depois das obrigações básicas, com coração aberto e caixa consciente.' });
+    priorities.push({ title: 'Reunião financeira semanal', text: 'Uma conversa curta, com números na mesa, protege shalom bayit e reduz decisões por emoção.' });
+    renderPriorities(priorities.slice(0, 5));
+
+    if (wisdomNextAction) wisdomNextAction.textContent = balance < 0 ? 'Cortar vazamentos agora' : (shortage > 0 ? 'Reforçar Meta Caixa' : 'Automatizar bons hábitos');
+    if (wisdomNextActionDetail) wisdomNextActionDetail.textContent = balance < 0 ? 'Suspender gastos variáveis até o caixa voltar ao positivo.' : (shortage > 0 ? 'Destinar o primeiro excedente para a reserva mínima.' : 'Separar investimento e generosidade no início do período.');
+    if (wisdomCouplePact) wisdomCouplePact.textContent = debt > 0 ? 'Pacto contra dívida nova' : 'Decisão conjunta antes de gastar';
+    if (wisdomCouplePactDetail) wisdomCouplePactDetail.textContent = debt > 0 ? 'Nenhuma parcela nova sem consenso e plano de quitação.' : 'Compras fora do combinado passam por conversa simples e objetiva.';
+    if (wisdomPrinciple) wisdomPrinciple.textContent = shortage > 0 ? 'Primeiro o recipiente, depois a bênção' : 'Fidelidade no pequeno';
+    if (wisdomPrincipleDetail) wisdomPrincipleDetail.textContent = shortage > 0 ? 'Na tradição judaica, prosperidade precisa de um kli: uma estrutura capaz de conter o crescimento.' : 'A riqueza sustentável cresce quando hábitos pequenos são repetidos com integridade.';
+
+    renderWisdomCards(wisdomPrinciples, [
+      { tone: shortage > 0 ? 'warning' : 'ok', title: 'Kli: recipiente financeiro', text: 'Reserva, orçamento e limites formam o recipiente que permite receber e manter prosperidade.' },
+      { tone: debt > 0 ? 'warning' : 'ok', title: 'Liberdade antes de aparência', text: 'Dívida sem plano reduz liberdade. Status não deve custar a paz da casa.' },
+      { tone: giving > 0 ? 'ok' : 'neutral', title: 'Tzedakah com ordem', text: 'Generosidade é mais forte quando planejada, constante e compatível com as responsabilidades do casal.' },
+      { tone: investments > 0 ? 'ok' : 'neutral', title: 'Plantar antes de colher', text: 'Investimento recorrente transforma renda em futuro, mesmo quando começa pequeno.' }
+    ], 'Princípios aparecem após os primeiros lançamentos.');
+  }
+
   function renderPersonalTable(list) {
     if (!personalTableBody) return;
     if (!list.length) {
@@ -817,6 +989,13 @@
     } else if (personalKpiShortage) {
       personalKpiShortage.parentElement && personalKpiShortage.parentElement.classList.remove('kpi-focus');
     }
+    renderProsperityGuidance(list, {
+      entries: entries,
+      exits: exits,
+      balance: balance,
+      score: score,
+      shortage: shortage
+    });
 
     renderPersonalTemperatureStatus(score, balance);
     renderPersonalGauge(personalGaugeChart, score, entries, exits, balance);
@@ -1129,6 +1308,12 @@
     if (exportReportPdfBtn) exportReportPdfBtn.addEventListener('click', handleExportReportPdf);
     if (personalTableBody) personalTableBody.addEventListener('click', handlePersonalTableClick);
     if (clearPersonalTransactionsBtn) clearPersonalTransactionsBtn.addEventListener('click', handleClearTransactions);
+    tabButtons.forEach(function (button) {
+      button.setAttribute('role', 'tab');
+      button.addEventListener('click', function () {
+        activateScreen(button.getAttribute('data-tab-target'));
+      });
+    });
     window.addEventListener('beforeprint', preparePrintReport);
     window.addEventListener('afterprint', restorePrintReport);
     window.addEventListener('resize', function () {

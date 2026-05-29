@@ -625,6 +625,156 @@ canvas {
   font-size: 12px;
 }
 
+.wisdom-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-left: 4px solid var(--brand);
+}
+
+.wisdom-hero h2 {
+  margin: 8px 0 6px;
+}
+
+.wisdom-hero p {
+  margin: 0;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.wisdom-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.wisdom-pill.neutral,
+.wisdom-item.neutral {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.wisdom-pill.ok,
+.wisdom-item.ok {
+  background: #ecfdf3;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.wisdom-pill.warning,
+.wisdom-item.warning {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #9a3412;
+}
+
+.wisdom-pill.critical,
+.wisdom-item.critical {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.wisdom-score {
+  min-width: 150px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+  background: #f8fafc;
+}
+
+.wisdom-score span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wisdom-score strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.advice-grid,
+.principles-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.advice-card,
+.wisdom-item,
+.priority-item {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.advice-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.advice-card strong,
+.wisdom-item strong,
+.priority-item strong {
+  display: block;
+  margin-top: 4px;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.advice-card p,
+.wisdom-item p,
+.priority-item p {
+  margin: 7px 0 0;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.wisdom-list,
+.priority-list {
+  display: grid;
+  gap: 10px;
+}
+
+.wisdom-item {
+  border-left-width: 4px;
+}
+
+.priority-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  background: #f8fafc;
+}
+
+.priority-item > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #fff;
+  font-weight: 800;
+}
+
 .personal-type {
   display: inline-block;
   padding: 2px 8px;
@@ -964,6 +1114,11 @@ th {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .advice-grid,
+  .principles-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   table {
     min-width: 640px;
     table-layout: auto;
@@ -1044,7 +1199,10 @@ th {
 
   .card,
   .chart-card,
-  .kpis article {
+  .kpis article,
+  .advice-card,
+  .wisdom-item,
+  .priority-item {
     background: #ffffff;
     border-color: #cbd5e1;
     break-inside: avoid;
@@ -1057,6 +1215,8 @@ th {
   }
 
   .dash-grid,
+  .advice-grid,
+  .principles-grid,
   .kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
