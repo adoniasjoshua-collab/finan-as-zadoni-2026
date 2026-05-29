@@ -1,0 +1,5 @@
+.sixth/
+deploy-pack-netlify-2026-03-12/
+*.zip
+.DS_Store
+Thumbs.db

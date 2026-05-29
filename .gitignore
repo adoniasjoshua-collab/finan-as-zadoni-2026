@@ -1,0 +1,10 @@
+# Ignore archives and system files
+*.zip
+*.tar.gz
+*.log
+.DS_Store
+Thumbs.db
+
+# Ignore VS Code workspace storage
+.vscode/*
+!.vscode/settings.json

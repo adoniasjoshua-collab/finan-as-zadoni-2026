@@ -1,0 +1,1216 @@
+﻿﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zadoni Variedades | Gestão Local de Vendas e Caixa</title>
+  <link rel="stylesheet" href="style.css?v=20260506a" />
+  <script src="modules/calc.js?v=20260311a" defer></script>
+  <script src="modules/data.js?v=20260311a" defer></script>
+  <script src="modules/ui.js?v=20260311a" defer></script>
+  <script src="app.js?v=20260506a" defer></script>
+</head>
+<body>
+  <header class="topbar no-print">
+    <h1>Zadoni Variedades</h1>
+    <p>Aplicação 100% frontend com dados salvos no navegador</p>
+    <div class="topbar-actions">
+      <button type="button" id="toggleAdvancedModulesBtn" class="ghost">Mostrar controles extras</button>
+      <button type="button" id="openGuideBtn" class="help-cta advanced-only" hidden>Manual Inteligente</button>
+    </div>
+    <p id="uiModeStatus" class="muted ui-mode-status">Modo gestão interna ativo: painel, vendas, movimentações e análise local.</p>
+  </header>
+
+  <nav class="tabs no-print" aria-label="Navegação principal">
+    <button class="tab is-active" type="button" data-tab="cash">1) Painel</button>
+    <button class="tab" type="button" data-tab="sales">2) Venda</button>
+    <button class="tab" type="button" data-tab="products">3) Produtos</button>
+    <button class="tab" type="button" data-tab="dashboard">4) Evolução</button>
+    <button class="tab" type="button" data-tab="personal">5) Pessoal</button>
+    <button class="tab" type="button" data-tab="partners">6) Sócios</button>
+    <button class="tab advanced-only" type="button" data-tab="purchases" hidden>Compras detalhadas</button>
+  </nav>
+
+  <main class="container">
+    <section class="screen" data-screen="products">
+      <section class="card">
+        <h2>Cadastro de Produtos</h2>
+        <p class="muted">Cadastre o custo uma vez. Na venda, o sistema puxa automaticamente.</p>
+
+        <form id="productForm" class="grid">
+          <label>
+            Produto
+            <input type="text" id="productName" required placeholder="Ex: Cone com rosa" />
+          </label>
+
+          <label>
+            Preço de Custo (R$)
+            <input type="number" id="productCost" min="0" step="0.01" required />
+          </label>
+
+          <label>
+            Preço Sugerido (R$)
+            <input type="number" id="productSuggested" min="0" step="0.01" value="0" />
+          </label>
+
+          <label>
+            Categoria (opcional)
+            <input type="text" id="productCategory" placeholder="Ex: Presentes" />
+          </label>
+          <label>
+            Descrição (opcional)
+            <textarea id="productDescription" rows="3" placeholder="Ex: Kit com 1 caneca + 1 caixa decorada + 3 bombons"></textarea>
+          </label>
+
+          <div class="actions">
+            <button type="submit" id="productSubmitBtn">Salvar Produto</button>
+            <button type="button" id="productCancelEdit" class="ghost" hidden>Cancelar edição</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Produtos Cadastrados</h2>
+        <div class="table-wrap">
+          <table id="productsTable" class="mobile-card-table">
+            <thead>
+              <tr>
+                <th>Produto</th>
+                <th>Custo</th>
+                <th>Preço Sugerido</th>
+                <th>Categoria</th>
+                <th>Descrição</th>
+                <th class="no-print">Ação</th>
+              </tr>
+            </thead>
+            <tbody id="productsTableBody">
+              <tr><td colspan="6">Nenhum produto cadastrado.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="actions no-print">
+          <button type="button" id="printProductsReport">Exportar PDF Produtos</button>
+        </div>
+      </section>
+    </section>
+
+    <section class="screen" data-screen="sales">
+      <section class="card">
+        <h2>Lançar Venda</h2>
+        <p class="muted">Fluxo rápido: escolha produto, informe quantidade e confirme venda.</p>
+
+        <form id="saleForm" class="grid">
+          <label>
+            Produto
+            <select id="saleProduct" required>
+              <option value="">Selecione um produto</option>
+            </select>
+          </label>
+          <div class="sale-product-panel" aria-live="polite">
+            <p id="saleProductNamePreview" class="muted">Produto selecionado: -</p>
+            <details id="saleProductDescriptionDetails" class="compact-details" hidden>
+              <summary>Ver descrição do produto</summary>
+              <p id="saleProductDescriptionPreview">Sem descrição cadastrada.</p>
+            </details>
+          </div>
+
+          <label>
+            Tipo de Venda
+            <select id="saleChannel" required>
+              <option value="">Selecione</option>
+              <option value="Presencial">Presencial</option>
+              <option value="Facebook Ads">Facebook Ads</option>
+              <option value="Instagram Orgânico">Instagram Orgânico</option>
+              <option value="WhatsApp">WhatsApp</option>
+              <option value="Indicação">Indicação</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </label>
+
+          <label>
+            Data da Venda
+            <input type="date" id="saleDate" required />
+          </label>
+
+          <label>
+            Quantidade
+            <input type="number" id="saleQuantity" min="1" step="1" value="1" required />
+          </label>
+
+          <label>
+            Preço de Venda Unitário (R$)
+            <input type="number" id="salePrice" min="0" step="0.01" required />
+          </label>
+
+          <label>
+            Custo Unitário (R$)
+            <input type="number" id="saleCostPreview" readonly />
+          </label>
+
+          <details class="advanced">
+            <summary>Opções avançadas</summary>
+            <div class="advanced-content">
+              <label>
+                Despesas Variáveis da Venda (R$)
+                <input type="number" id="saleExpense" min="0" step="0.01" value="0" />
+              </label>
+
+              <label>
+                Observação
+                <input type="text" id="saleNotes" placeholder="Opcional" />
+              </label>
+            </div>
+          </details>
+
+          <div class="actions">
+            <button type="submit" id="saleSubmitBtn">Salvar Venda</button>
+            <button type="button" id="saleCancelEdit" class="ghost" hidden>Cancelar edição</button>
+          </div>
+        </form>
+      </section>
+    </section>
+
+    <section class="screen is-active" data-screen="cash">
+      <section class="card">
+        <h2>Painel Financeiro Zadoni Presentes</h2>
+        <p class="muted">Veja lucro real, saldo operacional, recompras e ROI dos anúncios sem misturar negócio com pessoal.</p>
+
+        <div class="filters no-print">
+          <label>
+            Data inicial
+            <input type="date" id="filterStartDate" />
+          </label>
+          <label>
+            Data final
+            <input type="date" id="filterEndDate" />
+          </label>
+          <label>
+            Tipo de venda
+            <select id="filterSaleChannel">
+              <option value="">Todos</option>
+              <option value="Presencial">Presencial</option>
+              <option value="Facebook Ads">Facebook Ads</option>
+              <option value="Instagram Orgânico">Instagram Orgânico</option>
+              <option value="WhatsApp">WhatsApp</option>
+              <option value="Indicação">Indicação</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </label>
+          <div class="actions-inline">
+            <button type="button" id="applyFilters">Aplicar filtro</button>
+            <button type="button" id="clearFilters" class="ghost">Limpar filtro</button>
+            <button type="button" id="exportCsv">Exportar CSV</button>
+            <button type="button" id="printReport">Imprimir / PDF</button>
+          </div>
+        </div>
+
+        <div class="kpis kpis-daily">
+          <article class="kpi-focus"><span>Receita Bruta</span><strong id="kpiRevenue">R$ 0,00</strong></article>
+          <article class="kpi-focus"><span>Lucro Operacional Estratégico</span><strong id="kpiRealProfit">R$ 0,00</strong></article>
+          <article class="kpi-focus"><span>Saídas e Deduções</span><strong id="kpiWithdrawals">R$ 0,00</strong></article>
+          <article class="kpi-focus"><span>Saldo Operacional Disponível</span><strong id="kpiCashBalance">R$ 0,00</strong></article>
+          <article class="kpi-focus"><span>Cobertura Recompra (30d)</span><strong id="kpiRepurchaseCoverage">0,00x</strong></article>
+          <article class="kpi-focus"><span>Risco de Ruptura (30d)</span><strong id="kpiRuptureRisk">R$ 0,00</strong></article>
+          <article class="advanced-only" hidden><span>Custo Total</span><strong id="kpiCost">R$ 0,00</strong></article>
+          <article class="advanced-only" hidden><span>Despesas</span><strong id="kpiExpenses">R$ 0,00</strong></article>
+          <article class="advanced-only" hidden><span>Lucro Líquido das Vendas</span><strong id="kpiNetProfit">R$ 0,00</strong></article>
+          <article class="advanced-only" hidden><span>Margem Média</span><strong id="kpiMargin">0,00%</strong></article>
+          <article class="advanced-only" hidden><span>Compras no Período</span><strong id="kpiPurchases">R$ 0,00</strong></article>
+          <article class="advanced-only" hidden><span>Alocação ao Operacional</span><strong id="kpiOperationalAllocation">R$ 0,00</strong></article>
+          <article class="advanced-only" hidden><span>Distribuições</span><strong id="kpiDistributions">R$ 0,00</strong></article>
+          <article class="advanced-only" hidden><span>Cobertura das Saídas</span><strong id="kpiCashFundingShare">-</strong></article>
+          <article class="advanced-only" hidden><span>Meta Reserva Emergência</span><strong id="kpiEmergencyTarget">R$ 0,00</strong></article>
+          <article class="advanced-only" hidden><span>Dias de Caixa</span><strong id="kpiCashRunwayDays">0,0 dias</strong></article>
+          <article class="advanced-only" hidden><span>Giro Estoque (proxy)</span><strong id="kpiInventoryTurnover">0,00x</strong></article>
+        </div>
+        <p id="cashTrafficLight" class="traffic-light neutral">Farol financeiro aguardando dados do período.</p>
+      </section>
+
+      <section class="card">
+        <h2>Diagnóstico Rápido</h2>
+        <div class="decision-grid">
+          <article class="decision-card">
+            <span>Estou lucrando?</span>
+            <strong id="financeDiagnosisTitle">Aguardando dados</strong>
+            <p id="financeDiagnosisDetail">Lance vendas e movimentações para calcular lucro real.</p>
+          </article>
+          <article class="decision-card">
+            <span>Caixa pessoal x negócio</span>
+            <strong id="personalMixTitle">Sem alerta</strong>
+            <p id="personalMixDetail">Gastos pessoais usando pró-labore aparecerão aqui.</p>
+          </article>
+        </div>
+        <div class="rank-grid">
+          <div class="rank-panel">
+            <h3>Para onde o dinheiro está indo</h3>
+            <ol id="moneyDestinationList" class="rank-list">
+              <li>Sem saídas no período.</li>
+            </ol>
+          </div>
+          <div class="rank-panel">
+            <h3>Top 5 produtos vendidos</h3>
+            <ol id="topSoldProductsList" class="rank-list">
+              <li>Sem vendas no período.</li>
+            </ol>
+          </div>
+          <div class="rank-panel">
+            <h3>Top 5 gastos</h3>
+            <ol id="topExpensesList" class="rank-list">
+              <li>Sem gastos no período.</li>
+            </ol>
+          </div>
+          <div class="rank-panel">
+            <h3>Top 5 itens de recompra</h3>
+            <ol id="topRepurchaseList" class="rank-list">
+              <li>Sem compras no período.</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>ROI Ads Diário (Simplificado)</h2>
+        <p class="muted">Visão direta para decidir se os anúncios estão compensando hoje.</p>
+        <div class="kpis">
+          <article><span>Investido em Ads</span><strong id="cashAdsRoiInvestment">R$ 0,00</strong></article>
+          <article><span>Vendas via Ads</span><strong id="cashAdsRoiRevenue">R$ 0,00</strong></article>
+          <article><span>Resultado da Campanha</span><strong id="cashAdsRoiProfit">R$ 0,00</strong></article>
+          <article><span>ROI (%)</span><strong id="cashAdsRoi">0,00%</strong></article>
+          <article><span>Retorno por R$ 1</span><strong id="cashAdsRoiReturnPerReal">R$ 0,00</strong></article>
+        </div>
+        <p id="cashAdsRoiStatus" class="roi-status neutral">Leitura rápida: aguardando dados.</p>
+        <p id="cashAdsRoiAction" class="chart-note">Ação sugerida: aguarde dados para receber recomendação.</p>
+      </section>
+
+      <section class="card advanced-only" hidden>
+        <h2>Potes Estratégicos e Growth (Caixa)</h2>
+        <p id="cashGrowthStatus" class="chart-note">Status Growth: aguardando dados.</p>
+        <div class="kpis">
+          <article><span>Dízimo</span><strong id="cashJarTithe">R$ 0,00</strong></article>
+          <article><span>Reserva Emergência</span><strong id="cashJarEmergency">R$ 0,00</strong></article>
+          <article><span>Pote Dívidas</span><strong id="cashJarDebt">R$ 0,00</strong></article>
+          <article><span>Pró-labore</span><strong id="cashJarProLabore">R$ 0,00</strong></article>
+          <article><span>Crescimento</span><strong id="cashJarGrowth">R$ 0,00</strong></article>
+          <article><span>Operacional</span><strong id="cashJarOperational">R$ 0,00</strong></article>
+        </div>
+        <p id="cashAllocationValidation" class="chart-note">Validação de percentuais: aguardando dados.</p>
+        <p id="cashComparisonSummary" class="chart-note">Comparativo com período anterior: aguardando dados.</p>
+      </section>
+
+      <section class="card">
+        <h2>Fechamento Diário</h2>
+        <p id="dailyChecklistStatus" class="daily-status neutral">Checklist aguardando dados do período.</p>
+        <div id="dailyChecklistItems" class="daily-checklist-list">
+          <article class="daily-check-item neutral">
+            <header><strong>Aguardando validações</strong><span class="daily-pill neutral">Pendente</span></header>
+            <p>Diferença estimada: R$ 0,00</p>
+            <p>Ação sugerida: registre vendas/saídas para liberar o checklist diário.</p>
+          </article>
+        </div>
+
+        <form id="dailyCloseForm" class="grid no-print">
+          <label>
+            Responsável
+            <input type="text" id="dailyCloseResponsible" placeholder="Ex: Adonias" required />
+          </label>
+          <label>
+            Data de referência
+            <input type="date" id="dailyCloseDate" required />
+          </label>
+          <label style="grid-column: 1 / -1;">
+            Conciliação bancária dos objetivos (obrigatório)
+            <select id="dailyCloseBankCheck" required>
+              <option value="">Selecione</option>
+              <option value="yes">Sim, os valores dos potes no sistema batem com a conta bancária</option>
+              <option value="no">Não, existe divergência entre sistema e conta bancária</option>
+            </select>
+          </label>
+          <label style="grid-column: 1 / -1;">
+            Observações do fechamento (opcional)
+            <textarea id="dailyCloseNotes" rows="2" placeholder="Ex: Conferido com extrato e sem divergências."></textarea>
+          </label>
+          <div class="actions">
+            <button type="submit" id="dailyCloseSubmit">Marcar fechamento do dia</button>
+            <button type="button" id="dailyCloseCancelEdit" class="ghost" hidden>Cancelar edição</button>
+          </div>
+        </form>
+
+        <p class="muted">Últimos fechamentos registrados (7 dias recentes).</p>
+        <div class="table-wrap">
+          <table id="dailyCloseHistoryTable" class="mobile-card-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Responsável</th>
+                <th>Status</th>
+                <th>Banco</th>
+                <th>Obs.</th>
+                <th class="no-print">Ação</th>
+              </tr>
+            </thead>
+            <tbody id="dailyCloseHistoryBody">
+              <tr><td colspan="6">Nenhum fechamento diário registrado.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Movimentações Unificadas</h2>
+        <p class="muted">Fluxo único para compras, saídas, distribuições e investimentos em Ads.</p>
+        <form id="movementForm" class="grid no-print">
+          <label>
+            Data
+            <input type="date" id="movementDate" required />
+          </label>
+          <label>
+            Tipo de movimentação
+            <select id="movementKind" required>
+              <option value="">Selecione</option>
+              <option value="purchase">Compra</option>
+              <option value="withdrawal">Saída</option>
+              <option value="distribution">Distribuição Sócio</option>
+              <option value="ads">Investimento Ads</option>
+            </select>
+          </label>
+          <label id="movementPurchaseTypeWrap" hidden>
+            Categoria da compra
+            <select id="movementPurchaseType">
+              <option value="">Selecione</option>
+              <option value="Materia-prima">Matéria-prima</option>
+              <option value="Embalagem">Embalagem</option>
+              <option value="Operacional">Operacional</option>
+            </select>
+          </label>
+          <label id="movementItemWrap" hidden>
+            Item da compra
+            <input type="text" id="movementItem" placeholder="Ex: papel cartão, chocolate, fita de cetim" />
+          </label>
+          <label id="movementQuantityWrap" hidden>
+            Quantidade
+            <input type="number" id="movementQuantity" min="0.01" step="0.01" value="1" />
+          </label>
+          <label id="movementSupplierWrap" hidden>
+            Fornecedor (opcional)
+            <input type="text" id="movementSupplier" placeholder="Ex: Atacadão X" />
+          </label>
+          <label id="movementWithdrawalTypeWrap" hidden>
+            Tipo de saída
+            <select id="movementWithdrawalType">
+              <option value="">Selecione</option>
+              <option value="Retirada">Retirada</option>
+              <option value="Taxa">Taxa</option>
+              <option value="Deducao">Dedução</option>
+              <option value="TRANSFERENCIA">TRANSFERÊNCIA</option>
+              <option value="INVESTIMENTO">INVESTIMENTO</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </label>
+          <label id="movementPartnerWrap" hidden>
+            Sócio
+            <select id="movementPartner">
+              <option value="">Selecione</option>
+              <option value="Adonias">Adonias</option>
+              <option value="Zaine">Zaine</option>
+              <option value="Mayza">Mayza</option>
+              <option value="Dizimo">Dizimo</option>
+            </select>
+          </label>
+          <label id="movementAdsPlatformWrap" hidden>
+            Plataforma Ads
+            <select id="movementAdsPlatform">
+              <option value="Facebook Ads">Facebook Ads</option>
+              <option value="Google Ads">Google Ads</option>
+              <option value="TikTok Ads">TikTok Ads</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </label>
+          <label id="movementAdsMethodWrap" hidden>
+            Forma de pagamento
+            <select id="movementAdsMethod">
+              <option value="PIX Prepaid">PIX Prepaid</option>
+              <option value="PIX">PIX</option>
+              <option value="Card">Cartão</option>
+              <option value="Transfer">Transferência</option>
+              <option value="Other">Outro</option>
+            </select>
+          </label>
+          <label>
+            Valor (R$)
+            <input type="number" id="movementAmount" min="0.01" step="0.01" required />
+          </label>
+          <label>
+            Observação (opcional)
+            <input type="text" id="movementNotes" placeholder="Opcional" />
+          </label>
+          <label id="movementOtherFundingWrap" class="inline" hidden>
+            <input type="checkbox" id="movementOtherFunding" />
+            <span>Outra fonte de pagamento</span>
+          </label>
+          <label id="movementFundingSourceWrap" hidden>
+            Fonte (obrigatório se marcar outra fonte)
+            <input type="text" id="movementFundingSource" placeholder="Ex: PIX pessoal, empréstimo" />
+          </label>
+          <div class="actions">
+            <button type="submit" id="movementSubmitBtn">Salvar Movimentação</button>
+            <button type="button" id="movementCancelEdit" class="ghost" hidden>Cancelar edição</button>
+          </div>
+        </form>
+        <div class="table-wrap">
+          <table id="movementsTable" class="mobile-card-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Detalhes</th>
+                <th>Valor</th>
+                <th>Fonte</th>
+                <th>Obs.</th>
+                <th class="no-print">Ação</th>
+              </tr>
+            </thead>
+            <tbody id="movementsTableBody">
+              <tr><td colspan="7">Sem movimentações no período.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Histórico de Vendas</h2>
+        <div class="table-wrap">
+          <table id="salesTable" class="mobile-card-table">
+            <thead>
+              <tr>
+                <th>Data da Venda</th>
+                <th>Registrado em</th>
+                <th>Produto</th>
+                <th>Canal</th>
+                <th>Qtd</th>
+                <th>Custo</th>
+                <th>Preço</th>
+                <th>Receita</th>
+                <th>Margem</th>
+                <th>Lucro Líq.</th>
+                <th class="no-print">Ação</th>
+              </tr>
+            </thead>
+            <tbody id="salesTableBody">
+              <tr><td colspan="11">Nenhuma venda cadastrada.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="actions no-print">
+          <button type="button" id="clearSales" class="danger">Limpar Todas as Vendas</button>
+        </div>
+      </section>
+
+      <section class="card advanced-only" hidden>
+        <h2>Desempenho por Tipo de Venda</h2>
+        <p class="muted">Distribuição no período filtrado por data e canal.</p>
+        <div class="channel-grid">
+          <div class="table-wrap">
+            <table class="mobile-card-table">
+              <thead>
+                <tr>
+                  <th>Canal</th>
+                  <th>Qtd</th>
+                  <th>Receita</th>
+                  <th>Lucro Líq.</th>
+                  <th>Participação</th>
+                </tr>
+              </thead>
+              <tbody id="salesByChannelTableBody">
+                <tr><td colspan="5">Sem dados no período.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pie-wrap">
+            <svg id="salesChannelPie" class="pie-svg" viewBox="0 0 42 42" aria-label="Distribuição por canal"></svg>
+            <ul id="salesChannelLegend" class="pie-legend"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="card advanced-only" hidden>
+        <h2>Saídas e Deduções</h2>
+        <p class="muted">Registre retiradas, taxas e deduções para medir o saldo real de caixa.</p>
+        <form id="withdrawalForm" class="grid no-print">
+          <label>
+            Data
+            <input type="date" id="withdrawalDate" required />
+          </label>
+          <label>
+            Tipo
+            <select id="withdrawalType" required>
+              <option value="">Selecione</option>
+              <option value="Retirada">Retirada</option>
+              <option value="Taxa">Taxa</option>
+              <option value="Deducao">Dedução</option>
+              <option value="TRANSFERENCIA">TRANSFERÊNCIA</option>
+              <option value="INVESTIMENTO">INVESTIMENTO</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </label>
+          <label>
+            Valor (R$)
+            <input type="number" id="withdrawalAmount" min="0.01" step="0.01" required />
+          </label>
+          <label>
+            Observação (opcional)
+            <input type="text" id="withdrawalNotes" placeholder="Ex: taxa de maquininha" />
+          </label>
+          <label class="inline">
+            <input type="checkbox" id="withdrawalOtherFunding" />
+            <span>Outra fonte de pagamento</span>
+          </label>
+          <label>
+            Fonte (obrigatório se marcar outra fonte)
+            <input type="text" id="withdrawalFundingSource" placeholder="Ex: PIX pessoal, empréstimo" />
+          </label>
+          <div class="actions">
+            <button type="submit">Salvar Saída</button>
+          </div>
+        </form>
+        <div class="table-wrap">
+          <table id="withdrawalsTable" class="mobile-card-table">
+            <thead>
+              <tr>
+            <th>Data</th>
+            <th>Tipo</th>
+            <th>Valor</th>
+            <th>Obs.</th>
+            <th>Fonte</th>
+            <th class="no-print">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="withdrawalsTableBody">
+          <tr><td colspan="6">Nenhuma saída cadastrada.</td></tr>
+        </tbody>
+          </table>
+        </div>
+        <div class="actions no-print">
+          <button type="button" id="clearWithdrawals" class="danger">Limpar Saídas</button>
+        </div>
+      </section>
+    </section>
+
+    <section class="screen" data-screen="partners">
+      <section class="card">
+        <h2>Configuração de Metas (Administrador)</h2>
+        <p class="muted">Defina manualmente a meta de renda para cada sócio.</p>
+
+        <form id="partnerGoalForm" class="grid">
+          <label>
+            Meta Adonias (R$)
+            <input type="number" id="goalAdoniasInput" min="0" step="0.01" value="3000" required />
+          </label>
+          <label>
+            Meta Zaine (R$)
+            <input type="number" id="goalZaineInput" min="0" step="0.01" value="3000" required />
+          </label>
+          <label>
+            Meta Mayza (R$)
+            <input type="number" id="goalMayzaInput" min="0" step="0.01" value="3000" required />
+          </label>
+          <label>
+            Meta Dízimo (R$)
+            <input type="number" id="goalDizimoInput" min="0" step="0.01" value="3000" required />
+          </label>
+          <div class="actions">
+            <button type="submit">Salvar Metas</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card advanced-only" hidden>
+        <h2>Pagamento de Sócios</h2>
+        <p class="muted">Você define os valores. O sistema apenas registra e acompanha.</p>
+        <p id="partnerCurrentCycleInfo" class="muted"></p>
+        <p id="partnerMotivationMessage" class="motivation"></p>
+
+        <form id="partnerForm" class="grid">
+          <label>
+            Sócio
+            <select id="partnerName" required>
+              <option value="">Selecione</option>
+              <option value="Adonias">Adonias</option>
+              <option value="Zaine">Zaine</option>
+              <option value="Mayza">Mayza</option>
+              <option value="Dizimo">Dizimo</option>
+            </select>
+          </label>
+
+          <label>
+            Valor da Contribuição (R$)
+            <input type="number" id="partnerAmount" min="0.01" step="0.01" required />
+          </label>
+
+          <label>
+            Observação
+            <input type="text" id="partnerNotes" placeholder="Opcional" />
+          </label>
+
+          <label class="inline">
+            <input type="checkbox" id="partnerOtherFunding" />
+            <span>Outra fonte de pagamento</span>
+          </label>
+          <label>
+            Fonte (obrigatório se marcar outra fonte)
+            <input type="text" id="partnerFundingSource" placeholder="Ex: PIX pessoal, empréstimo" />
+          </label>
+
+          <div class="actions">
+            <button type="submit">Lançar Contribuição</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Metas de Renda por Sócio</h2>
+        <div class="filters no-print">
+          <label>
+            Ciclo para consulta
+            <select id="partnerCycleSelect"></select>
+          </label>
+        </div>
+        <div class="partner-goals">
+          <article class="partner-card">
+            <header>
+              <strong>Adonias</strong>
+              <span id="goalAdoniasAmount">R$ 0,00 / R$ 0,00</span>
+            </header>
+            <div class="goal-bar"><span id="goalAdoniasBar"></span></div>
+            <p id="goalAdoniasMessage" class="goal-msg">Meta em andamento.</p>
+          </article>
+
+          <article class="partner-card">
+            <header>
+              <strong>Zaine</strong>
+              <span id="goalZaineAmount">R$ 0,00 / R$ 0,00</span>
+            </header>
+            <div class="goal-bar"><span id="goalZaineBar"></span></div>
+            <p id="goalZaineMessage" class="goal-msg">Meta em andamento.</p>
+          </article>
+
+          <article class="partner-card">
+            <header>
+              <strong>Mayza</strong>
+              <span id="goalMayzaAmount">R$ 0,00 / R$ 0,00</span>
+            </header>
+            <div class="goal-bar"><span id="goalMayzaBar"></span></div>
+            <p id="goalMayzaMessage" class="goal-msg">Meta em andamento.</p>
+          </article>
+
+          <article class="partner-card">
+            <header>
+              <strong>Dízimo</strong>
+              <span id="goalDizimoAmount">R$ 0,00 / R$ 0,00</span>
+            </header>
+            <div class="goal-bar"><span id="goalDizimoBar"></span></div>
+            <p id="goalDizimoMessage" class="goal-msg">Meta em andamento.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Resumo de Distribuição</h2>
+        <div class="kpis">
+          <article><span>Caixa Antes das Distribuições</span><strong id="partnerKpiProfit">R$ 0,00</strong></article>
+          <article><span>Total Distribuído</span><strong id="partnerKpiDistributed">R$ 0,00</strong></article>
+          <article><span>Saldo Real do Ciclo</span><strong id="partnerKpiBalance">R$ 0,00</strong></article>
+        </div>
+      </section>
+
+      <section class="card advanced-only" hidden>
+        <h2>Histórico de Contribuições</h2>
+        <div class="table-wrap">
+          <table id="partnersTable" class="mobile-card-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Sócio</th>
+                <th>Valor</th>
+                <th>Obs.</th>
+                <th>Fonte</th>
+                <th class="no-print">Ação</th>
+              </tr>
+            </thead>
+            <tbody id="partnersTableBody">
+              <tr><td colspan="6">Nenhuma contribuição lançada.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="actions no-print">
+          <button type="button" id="printPartnersReport">Exportar PDF Sócios</button>
+          <button type="button" id="clearPartnerContributions" class="danger">Limpar Contribuições do Ciclo</button>
+        </div>
+      </section>
+    </section>
+
+    <section class="screen advanced-only" data-screen="purchases" hidden>
+      <section class="card">
+        <h2>Lançar Compra</h2>
+        <p class="muted">Registre toda compra do negócio para medir custo real e proteger sua margem.</p>
+
+        <form id="purchaseForm" class="grid">
+          <label>
+            Data da Compra
+            <input type="date" id="purchaseDate" required />
+          </label>
+
+          <label>
+            Tipo
+            <select id="purchaseType" required>
+              <option value="">Selecione</option>
+              <option value="Materia-prima">Matéria-prima</option>
+              <option value="Embalagem">Embalagem</option>
+              <option value="Operacional">Operacional</option>
+            </select>
+          </label>
+
+          <label>
+            Item
+            <input type="text" id="purchaseItem" required placeholder="Ex: Papel cartão, chocolate, fita de cetim" />
+          </label>
+
+          <label>
+            Quantidade
+            <input type="number" id="purchaseQuantity" min="0.01" step="0.01" value="1" required />
+          </label>
+
+          <label>
+            Valor Total (R$)
+            <input type="number" id="purchaseTotal" min="0.01" step="0.01" required />
+          </label>
+
+          <label>
+            Fornecedor (opcional)
+            <input type="text" id="purchaseSupplier" placeholder="Ex: Atacadão X" />
+          </label>
+
+         <label>
+           Observação (opcional)
+           <input type="text" id="purchaseNotes" placeholder="Ex: lote da semana" />
+         </label>
+          <label class="inline">
+            <input type="checkbox" id="purchaseOtherFunding" />
+            <span>Outra fonte de pagamento</span>
+          </label>
+          <label>
+            Fonte (obrigatório se marcar outra fonte)
+            <input type="text" id="purchaseFundingSource" placeholder="Ex: PIX pessoal, empréstimo" />
+          </label>
+
+          <div class="actions">
+            <button type="submit">Salvar Compra</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Histórico de Compras</h2>
+        <div class="table-wrap">
+          <table id="purchasesTable" class="mobile-card-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Item</th>
+                <th>Qtd</th>
+            <th>Total</th>
+            <th>Fornecedor</th>
+            <th>Obs.</th>
+            <th>Fonte</th>
+            <th class="no-print">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="purchasesTableBody">
+          <tr><td colspan="9">Nenhuma compra cadastrada.</td></tr>
+        </tbody>
+          </table>
+        </div>
+        <div class="actions no-print">
+          <button type="button" id="printPurchasesReport">Exportar PDF Compras</button>
+          <button type="button" id="clearPurchases" class="danger">Limpar Todas as Compras</button>
+        </div>
+      </section>
+    </section>
+
+    <section class="screen" data-screen="dashboard">
+      <section class="card">
+        <h2>Dashboard de Saúde do Negócio</h2>
+        <p class="muted">Painel executivo para tendência, rentabilidade e equilíbrio de caixa.</p>
+        <div class="filters no-print">
+          <label>
+            Data inicial
+            <input type="date" id="dashboardFilterStartDate" />
+          </label>
+          <label>
+            Data final
+            <input type="date" id="dashboardFilterEndDate" />
+          </label>
+          <label>
+            Tipo de venda
+            <select id="dashboardFilterSaleChannel">
+              <option value="">Todos</option>
+              <option value="Presencial">Presencial</option>
+              <option value="Facebook Ads">Facebook Ads</option>
+              <option value="Instagram Orgânico">Instagram Orgânico</option>
+              <option value="WhatsApp">WhatsApp</option>
+              <option value="Indicação">Indicação</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </label>
+          <div class="actions-inline">
+            <button type="button" id="dashboardApplyFilters">Aplicar no Dashboard</button>
+            <button type="button" id="dashboardClearFilters" class="ghost">Limpar</button>
+            <button type="button" id="printDashboardReport">Exportar PDF Dashboard</button>
+          </div>
+        </div>
+        <div class="kpis">
+          <article><span>Receita</span><strong id="dashKpiRevenue">R$ 0,00</strong></article>
+          <article><span>Lucro Operacional Estratégico</span><strong id="dashKpiOperational">R$ 0,00</strong></article>
+          <article><span>Saldo Operacional Disponível</span><strong id="dashKpiCash">R$ 0,00</strong></article>
+          <article><span>Alocação ao Operacional</span><strong id="dashKpiOperationalAllocation">R$ 0,00</strong></article>
+          <article><span>Ticket Médio</span><strong id="dashKpiTicket">R$ 0,00</strong></article>
+          <article><span>Meta Reserva Emergência</span><strong id="dashKpiEmergencyTarget">R$ 0,00</strong></article>
+          <article><span>Dias de Caixa</span><strong id="dashKpiRunwayDays">0,0 dias</strong></article>
+          <article><span>Cobertura Recompra (30d)</span><strong id="dashKpiRepurchaseCoverage">0,00x</strong></article>
+          <article><span>Risco de Ruptura (30d)</span><strong id="dashKpiRuptureRisk">R$ 0,00</strong></article>
+          <article><span>Giro Estoque (proxy)</span><strong id="dashKpiInventoryTurnover">0,00x</strong></article>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Potes Estratégicos e Growth</h2>
+        <p id="dashGrowthStatus" class="chart-note">Status Growth: aguardando dados.</p>
+        <div class="kpis">
+          <article><span>Dízimo</span><strong id="dashJarTithe">R$ 0,00</strong></article>
+          <article><span>Reserva Emergência</span><strong id="dashJarEmergency">R$ 0,00</strong></article>
+          <article><span>Pote Dívidas</span><strong id="dashJarDebt">R$ 0,00</strong></article>
+          <article><span>Pró-labore</span><strong id="dashJarProLabore">R$ 0,00</strong></article>
+          <article><span>Crescimento</span><strong id="dashJarGrowth">R$ 0,00</strong></article>
+          <article><span>Operacional</span><strong id="dashJarOperational">R$ 0,00</strong></article>
+        </div>
+        <p id="dashAllocationValidation" class="chart-note">Validação de percentuais: aguardando dados.</p>
+        <p id="dashComparisonSummary" class="chart-note">Comparativo com período anterior: aguardando dados.</p>
+      </section>
+
+      <section class="card">
+        <h2>Gestão de Investimentos (Ads)</h2>
+        <p class="muted">Registre os pagamentos feitos às plataformas de anúncios (Facebook, Google, etc).</p>
+        <form id="adsInvestmentForm" class="grid">
+          <label>
+            Data
+            <input type="date" id="adsDate" required />
+          </label>
+          <label>
+            Plataforma
+            <select id="adsPlatform" required>
+              <option value="Facebook Ads">Facebook Ads</option>
+              <option value="Google Ads">Google Ads</option>
+              <option value="TikTok Ads">TikTok Ads</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </label>
+          <label>
+            Valor Investido (R$)
+            <input type="number" id="adsAmount" min="0.01" step="0.01" required />
+          </label>
+          <label>
+            Forma de Pagamento
+            <select id="adsPaymentMethod" required>
+              <option value="PIX Prepaid" selected>PIX Prepaid</option>
+              <option value="PIX">PIX</option>
+              <option value="Card">Cartão</option>
+              <option value="Transfer">Transferência</option>
+              <option value="Other">Outro</option>
+            </select>
+          </label>
+          <label>
+            Observação (opcional)
+            <input type="text" id="adsNotes" placeholder="Ex: PIX prepago p/ Ads" />
+          </label>
+          <div class="actions">
+            <button type="submit">Salvar Investimento</button>
+          </div>
+        </form>
+        <div class="table-wrap" style="margin-top: 1.5rem;">
+          <table id="adsInvestmentsTable" class="mobile-card-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Plataf.</th>
+                <th>Valor</th>
+                <th>Forma</th>
+                <th>Obs.</th>
+                <th class="no-print">Ação</th>
+              </tr>
+            </thead>
+            <tbody id="adsInvestmentsTableBody">
+              <tr><td colspan="6">Nenhum investimento registrado.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Painel ROI Facebook Ads</h2>
+        <p class="muted">Leitura simplificada do desempenho em anúncios: quanto investiu, quanto voltou em vendas e se valeu a pena.</p>
+        <div class="kpis">
+          <article><span>Quanto foi investido</span><strong id="dashFbAdsInvestment">R$ 0,00</strong></article>
+          <article><span>Quanto voltou em vendas</span><strong id="dashFbAdsRevenue">R$ 0,00</strong></article>
+          <article><span>Resultado final da campanha</span><strong id="dashFbAdsProfit">R$ 0,00</strong></article>
+          <article><span>ROI (Retorno %)</span><strong id="dashFbAdsRoi">0,00%</strong></article>
+          <article><span>Retorno por R$1 investido</span><strong id="dashFbAdsReturnPerReal">R$ 0,00</strong></article>
+        </div>
+        <p id="dashFbAdsRoiStatus" class="roi-status neutral">Leitura rápida: aguardando dados.</p>
+        <p id="dashFbAdsRoiAction" class="chart-note">Ação sugerida: aguarde dados para receber recomendação.</p>
+        <div class="chart-card">
+          <h3 class="chart-title">Evolução do Retorno (%) no Período</h3>
+          <canvas id="dashFbAdsRoiChart" height="260"></canvas>
+          <p id="dashFbAdsRoiNote" class="chart-note">Interpretação simples: ROI positivo indica retorno acima do investimento; ROI negativo indica prejuízo na campanha.</p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Mix por Canal (Donut)</h2>
+        <div class="dash-grid">
+          <div class="chart-card">
+            <canvas id="dashDonutChart" height="260"></canvas>
+            <ul id="dashDonutLegend" class="pie-legend"></ul>
+          </div>
+          <div class="chart-card">
+            <h3 class="chart-title">Comparação por Canal</h3>
+            <canvas id="dashChannelBarChart" height="260"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Tendências e Evolução</h2>
+        <div class="dash-grid">
+          <div class="chart-card">
+            <h3 class="chart-title">Tendência: Receita, Lucro Operacional e Saldo Operacional</h3>
+            <canvas id="dashTrendChart" height="260"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3 class="chart-title">Entradas vs Saídas Estratégicas</h3>
+            <canvas id="dashFlowChart" height="260"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3 class="chart-title">Top Produtos por Receita</h3>
+            <canvas id="dashTopProductsChart" height="260"></canvas>
+            <p id="dashTopProductsSummary" class="chart-note">Produto líder do período: -</p>
+          </div>
+          <div class="chart-card">
+            <h3 class="chart-title">Ticket Médio por Período</h3>
+            <canvas id="dashTicketTrendChart" height="260"></canvas>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="screen" data-screen="personal">
+      <section class="card">
+        <h2>Finanças Pessoais - Adonias</h2>
+        <p class="muted">Controle independente do negócio para rastrear entradas, saídas e comportamento diário de gastos.</p>
+        <div class="actions no-print" style="margin-bottom:1rem;">
+          <button type="button" id="openPersonalGuideBtn" class="ghost advanced-only" hidden>Ajuda Guiada Finanças Pessoais</button>
+        </div>
+        <form id="personalForm" class="grid">
+          <label>
+            Data
+            <input type="date" id="personalDate" required />
+          </label>
+          <label>
+            Tipo
+            <select id="personalType" required>
+              <option value="">Selecione</option>
+              <option value="entry">Entrada</option>
+              <option value="exit">Saída</option>
+            </select>
+          </label>
+          <label>
+            Categoria
+            <select id="personalCategory" required>
+              <option value="">Selecione</option>
+              <option value="Renda">Renda</option>
+              <option value="Alimentação">Alimentação</option>
+              <option value="Transporte">Transporte</option>
+              <option value="Moradia">Moradia</option>
+              <option value="Saúde">Saúde</option>
+              <option value="Educação">Educação</option>
+              <option value="Lazer">Lazer</option>
+              <option value="Dívidas">Dívidas</option>
+              <option value="Outros">Outros</option>
+            </select>
+          </label>
+          <label>
+            Valor (R$)
+            <input type="number" id="personalAmount" min="0.01" step="0.01" required />
+          </label>
+          <label>
+            Observação
+            <input type="text" id="personalNotes" placeholder="Opcional" />
+          </label>
+          <label class="inline">
+            <input type="checkbox" id="personalUseBusinessFunds" />
+            <span>Usar saldo de Pró-labore</span>
+          </label>
+          <label>
+            Fonte (obrigatório se não usar saldo de Pró-labore)
+            <input type="text" id="personalFundingSource" placeholder="Ex: renda extra, empréstimo" />
+          </label>
+          <div class="actions">
+            <button type="submit" id="personalSubmitBtn">Salvar Lançamento Pessoal</button>
+            <button type="button" id="personalCancelEdit" class="ghost" hidden>Cancelar edição</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Filtro e Temperatura Financeira</h2>
+        <div class="filters no-print">
+          <label>
+            Data inicial
+            <input type="date" id="personalFilterStartDate" />
+          </label>
+          <label>
+            Data final
+            <input type="date" id="personalFilterEndDate" />
+          </label>
+          <div class="actions-inline">
+            <button type="button" id="personalApplyFilters">Aplicar filtro pessoal</button>
+            <button type="button" id="personalClearFilters" class="ghost">Limpar</button>
+          </div>
+        </div>
+        <div class="kpis">
+          <article><span>Entradas</span><strong id="personalKpiEntries">R$ 0,00</strong></article>
+          <article><span>Saídas</span><strong id="personalKpiExits">R$ 0,00</strong></article>
+          <article><span>Saldo Pessoal</span><strong id="personalKpiBalance">R$ 0,00</strong></article>
+          <article><span>Índice de Saúde</span><strong id="personalKpiHealth">0,00%</strong></article>
+          <article><span>Pró-labore Disponível</span><strong id="personalKpiProLaboreAvailable">R$ 0,00</strong></article>
+        </div>
+        <p id="personalTemperatureLabel" class="traffic-light neutral">Temperatura financeira aguardando dados.</p>
+      </section>
+
+      <section class="card">
+        <h2>Comportamento ao Longo do Tempo</h2>
+        <div class="dash-grid">
+          <div class="chart-card">
+            <h3 class="chart-title">Relógio de Temperatura Financeira</h3>
+            <canvas id="personalGaugeChart" height="260"></canvas>
+            <div class="gauge-legend">
+              <div class="chip chip-red">Crítico</div>
+              <div class="chip chip-yellow">Atenção</div>
+              <div class="chip chip-green">Saudável</div>
+            </div>
+            <div class="gauge-status">
+              <div id="personalGaugeStatus" class="status-label">Estado: -</div>
+              <div id="personalGaugeAdvice" class="status-advice">Aguardando dados.</div>
+            </div>
+            <div class="gauge-stats">
+              <div class="stat-box">
+                <span>Entradas</span>
+                <strong id="personalGaugeEntries">R$ 0,00</strong>
+              </div>
+              <div class="stat-box">
+                <span>Saídas</span>
+                <strong id="personalGaugeExits">R$ 0,00</strong>
+              </div>
+              <div class="stat-box">
+                <span>Saldo</span>
+                <strong id="personalGaugeBalance">R$ 0,00</strong>
+              </div>
+            </div>
+          </div>
+          <div class="chart-card">
+            <h3 class="chart-title">Tendência de Entradas, Saídas e Saldo</h3>
+            <canvas id="personalTimelineChart" height="260"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3 class="chart-title">Top Categorias de Saída</h3>
+            <canvas id="personalCategoryChart" height="260"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3 class="chart-title">Fontes das Saídas</h3>
+            <canvas id="personalFundingChart" height="260"></canvas>
+            <p class="chart-note" id="personalFundingNote">Mostra quanto das saídas veio do Pró-labore vs outras fontes.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Histórico Pessoal</h2>
+        <div class="table-wrap">
+          <table id="personalTable" class="mobile-card-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Categoria</th>
+                <th>Valor</th>
+                <th>Obs.</th>
+                <th>Fonte</th>
+                <th class="no-print">Ação</th>
+              </tr>
+            </thead>
+            <tbody id="personalTableBody">
+              <tr><td colspan="7">Nenhum lançamento pessoal cadastrado.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="actions no-print">
+          <button type="button" id="clearPersonalTransactions" class="danger">Limpar Lançamentos Pessoais</button>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <section id="helpManualModal" class="help-modal no-print advanced-only" aria-hidden="true" hidden>
+    <div class="help-panel" role="dialog" aria-modal="true" aria-labelledby="helpManualTitle">
+      <header class="help-header">
+        <h2 id="helpManualTitle">Manual Inteligente de Operação</h2>
+        <button type="button" id="closeGuideBtn" class="ghost">Fechar</button>
+      </header>
+
+      <div class="help-toolbar">
+        <button type="button" class="help-scope is-active" data-help-scope="business">Negócio</button>
+        <button type="button" class="help-scope" data-help-scope="personal">Finanças Pessoais</button>
+      </div>
+
+      <div class="help-grid">
+        <aside class="help-sidebar">
+          <h3>Tópicos</h3>
+          <div id="helpTopicList" class="help-topic-list"></div>
+        </aside>
+        <section class="help-content">
+          <article class="card">
+            <h3 id="helpTopicTitle">Selecione um tópico</h3>
+            <p id="helpTopicDefinition" class="muted">As definições aparecerão aqui.</p>
+            <div id="helpExamples" class="help-examples"></div>
+            <div id="helpActions" class="help-actions"></div>
+          </article>
+
+          <article class="card">
+            <h3>Treino Gamificado</h3>
+            <p id="helpQuizMeta" class="muted">Treine decisões sem afetar seus dados reais.</p>
+            <div id="helpQuizQuestion" class="help-quiz-question">Selecione um tópico para começar.</div>
+            <div id="helpQuizOptions" class="help-quiz-options"></div>
+            <div class="actions-inline">
+              <button type="button" id="helpQuizNextBtn">Próxima Pergunta</button>
+              <button type="button" id="helpQuizResetBtn" class="ghost">Reiniciar Trilha</button>
+            </div>
+            <p id="helpQuizFeedback" class="chart-note">Feedback aparecerá aqui.</p>
+            <p id="helpQuizScore" class="chart-note">Progresso: 0/0 | Pontos: 0</p>
+            <p id="helpQuizCompletion" class="chart-note">Conclua as perguntas para liberar seu nível.</p>
+          </article>
+        </section>
+      </div>
+    </div>
+  </section>
+</body>
+</html>
+
