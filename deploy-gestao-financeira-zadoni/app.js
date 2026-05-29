@@ -5,6 +5,7 @@
   const STORAGE_PERSONAL_FILTERS = 'zadoni_personal_filters_v1';
   const STORAGE_META_CAIXA = 'zadoni_meta_caixa_v1';
   const STORAGE_META_HISTORY = 'zadoni_meta_history_v1';
+  const STORAGE_DEBTS = 'zadoni_debts_v1';
   const ZadoniModules = window.ZadoniModules || {};
   const CalcModule = ZadoniModules.calc || {};
   const DataModule = ZadoniModules.data || {};
@@ -69,9 +70,37 @@
   const wisdomAlerts = document.getElementById('wisdomAlerts');
   const wisdomPriorities = document.getElementById('wisdomPriorities');
   const wisdomPrinciples = document.getElementById('wisdomPrinciples');
+  const debtForm = document.getElementById('debtForm');
+  const debtCreditorInput = document.getElementById('debtCreditor');
+  const debtOriginalAmountInput = document.getElementById('debtOriginalAmount');
+  const debtNegotiatedAmountInput = document.getElementById('debtNegotiatedAmount');
+  const debtPaidAmountInput = document.getElementById('debtPaidAmount');
+  const debtDueDateInput = document.getElementById('debtDueDate');
+  const debtNextActionDateInput = document.getElementById('debtNextActionDate');
+  const debtStatusInput = document.getElementById('debtStatus');
+  const debtPriorityInput = document.getElementById('debtPriority');
+  const debtContactInput = document.getElementById('debtContact');
+  const debtNotesInput = document.getElementById('debtNotes');
+  const debtSubmitBtn = document.getElementById('debtSubmitBtn');
+  const debtCancelEditBtn = document.getElementById('debtCancelEdit');
+  const debtStatusPill = document.getElementById('debtStatusPill');
+  const debtFreedomMessage = document.getElementById('debtFreedomMessage');
+  const debtCleanProgress = document.getElementById('debtCleanProgress');
+  const debtKpiCreditors = document.getElementById('debtKpiCreditors');
+  const debtKpiOriginal = document.getElementById('debtKpiOriginal');
+  const debtKpiNegotiated = document.getElementById('debtKpiNegotiated');
+  const debtKpiPaid = document.getElementById('debtKpiPaid');
+  const debtKpiRemaining = document.getElementById('debtKpiRemaining');
+  const debtKpiUpcoming = document.getElementById('debtKpiUpcoming');
+  const debtNegotiationChart = document.getElementById('debtNegotiationChart');
+  const debtStatusChart = document.getElementById('debtStatusChart');
+  const debtRabbiGuidance = document.getElementById('debtRabbiGuidance');
+  const debtTableBody = document.getElementById('debtTableBody');
 
   let personalTransactions = [];
+  let debts = [];
   let editingPersonalId = '';
+  let editingDebtId = '';
   let metaCaixaMin = 5000; // valor mínimo recomendado para meta caixa
   let reservedAmount = 0; // indicador de valor reservado (apenas sinalização local)
   let metaHistory = [];
@@ -235,6 +264,7 @@
       button.setAttribute('aria-selected', isActive ? 'true' : 'false');
     });
     refreshPersonalFinance();
+    refreshDebtFreedom();
   }
 
   function getPersonalHealthScore(totalEntries, totalExits) {
@@ -929,6 +959,267 @@
     ], 'Princípios aparecem após os primeiros lançamentos.');
   }
 
+  function getDebtBaseAmount(debt) {
+    const original = Number(debt.originalAmount || 0);
+    const negotiated = Number(debt.negotiatedAmount || 0);
+    return negotiated > 0 ? negotiated : original;
+  }
+
+  function getDebtRemaining(debt) {
+    if (String(debt.status || '') === 'Quitado') return 0;
+    return Math.max(0, getDebtBaseAmount(debt) - Number(debt.paidAmount || 0));
+  }
+
+  function getDebtMetrics() {
+    const activeDebts = debts.filter(function (debt) { return String(debt.status || '') !== 'Quitado'; });
+    const totalOriginal = debts.reduce(function (acc, debt) { return acc + Number(debt.originalAmount || 0); }, 0);
+    const totalNegotiated = debts.reduce(function (acc, debt) { return acc + getDebtBaseAmount(debt); }, 0);
+    const totalPaid = debts.reduce(function (acc, debt) { return acc + Math.min(Number(debt.paidAmount || 0), getDebtBaseAmount(debt)); }, 0);
+    const totalRemaining = debts.reduce(function (acc, debt) { return acc + getDebtRemaining(debt); }, 0);
+    const progress = totalNegotiated > 0 ? Math.round((Math.min(totalPaid, totalNegotiated) / totalNegotiated) * 100) : 0;
+    const today = new Date().toISOString().slice(0, 10);
+    const upcoming = activeDebts.filter(function (debt) {
+      const next = String(debt.nextActionDate || '');
+      return next && next <= today;
+    }).length;
+    return {
+      activeDebts: activeDebts,
+      totalOriginal: totalOriginal,
+      totalNegotiated: totalNegotiated,
+      totalPaid: totalPaid,
+      totalRemaining: totalRemaining,
+      progress: progress,
+      upcoming: upcoming
+    };
+  }
+
+  function resetDebtFormMode() {
+    editingDebtId = '';
+    if (debtSubmitBtn) debtSubmitBtn.textContent = 'Salvar Credor';
+    if (debtCancelEditBtn) debtCancelEditBtn.setAttribute('hidden', 'hidden');
+  }
+
+  function resetDebtForm() {
+    if (debtForm) debtForm.reset();
+    resetDebtFormMode();
+    if (debtStatusInput) debtStatusInput.value = 'Atrasado';
+    if (debtPriorityInput) debtPriorityInput.value = 'Alta';
+    if (debtPaidAmountInput) debtPaidAmountInput.value = '0';
+  }
+
+  function loadDebts() {
+    try {
+      const raw = localStorage.getItem(STORAGE_DEBTS);
+      debts = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(debts)) debts = [];
+    } catch (error) {
+      localStorage.removeItem(STORAGE_DEBTS);
+      debts = [];
+    }
+  }
+
+  function saveDebts() {
+    localStorage.setItem(STORAGE_DEBTS, JSON.stringify(debts));
+  }
+
+  function startDebtEdit(debtId) {
+    const debt = debts.find(function (item) { return item.id === debtId; });
+    if (!debt) {
+      window.alert('Credor não encontrado para edição.');
+      return;
+    }
+    editingDebtId = debt.id;
+    if (debtCreditorInput) debtCreditorInput.value = debt.creditor || '';
+    if (debtOriginalAmountInput) debtOriginalAmountInput.value = Number(debt.originalAmount || 0).toFixed(2);
+    if (debtNegotiatedAmountInput) debtNegotiatedAmountInput.value = Number(debt.negotiatedAmount || 0) > 0 ? Number(debt.negotiatedAmount || 0).toFixed(2) : '';
+    if (debtPaidAmountInput) debtPaidAmountInput.value = Number(debt.paidAmount || 0).toFixed(2);
+    if (debtDueDateInput) debtDueDateInput.value = debt.dueDate || '';
+    if (debtNextActionDateInput) debtNextActionDateInput.value = debt.nextActionDate || '';
+    if (debtStatusInput) debtStatusInput.value = debt.status || 'Atrasado';
+    if (debtPriorityInput) debtPriorityInput.value = debt.priority || 'Alta';
+    if (debtContactInput) debtContactInput.value = debt.contact || '';
+    if (debtNotesInput) debtNotesInput.value = debt.notes || '';
+    if (debtSubmitBtn) debtSubmitBtn.textContent = 'Atualizar Credor';
+    if (debtCancelEditBtn) debtCancelEditBtn.removeAttribute('hidden');
+    if (debtForm && typeof debtForm.scrollIntoView === 'function') {
+      debtForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function renderDebtTable() {
+    if (!debtTableBody) return;
+    const sorted = debts.slice().sort(function (a, b) {
+      const statusWeight = { 'Atrasado': 0, 'Em negociação': 1, 'Acordo ativo': 2, 'Contestar': 3, 'Quitado': 4 };
+      const pa = statusWeight[a.status] || 0;
+      const pb = statusWeight[b.status] || 0;
+      if (pa !== pb) return pa - pb;
+      return getDebtRemaining(b) - getDebtRemaining(a);
+    });
+    if (!sorted.length) {
+      debtTableBody.innerHTML = '<tr><td colspan="8">Nenhum credor cadastrado.</td></tr>';
+      return;
+    }
+    debtTableBody.innerHTML = sorted.map(function (debt) {
+      const remaining = getDebtRemaining(debt);
+      const details = renderMobileInlineDetails([
+        renderOptionalFieldDetailsIfPresent(debt.contact, 'Ver contato'),
+        renderOptionalFieldDetailsIfPresent(debt.notes, 'Ver acordo')
+      ]);
+      return '<tr>' +
+        '<td><div class="sale-product-cell"><strong class="product-name-cell">' + escapeHtml(debt.creditor || '-') + '</strong>' + details + '</div></td>' +
+        '<td><span class="debt-status-badge ' + escapeHtml(String(debt.status || '').toLowerCase().replace(/\s+/g, '-')) + '">' + escapeHtml(debt.status || '-') + '</span></td>' +
+        '<td>' + toMoney(debt.originalAmount) + '</td>' +
+        '<td>' + toMoney(getDebtBaseAmount(debt)) + '</td>' +
+        '<td>' + toMoney(debt.paidAmount) + '</td>' +
+        '<td>' + toMoney(remaining) + '</td>' +
+        '<td>' + (debt.nextActionDate ? formatDateOnly(debt.nextActionDate) : '-') + '</td>' +
+        '<td class="no-print"><div class="actions-inline"><button type="button" class="ghost" data-edit-debt="' + debt.id + '">Editar</button><button type="button" data-delete-debt="' + debt.id + '">Excluir</button></div></td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  function renderDebtGuidance(metrics) {
+    const items = [];
+    if (!debts.length) {
+      items.push({ tone: 'warning', title: 'Mapear todos os credores', text: 'Antes de negociar, tragam tudo para a luz: nome do credor, valor aproximado, atraso e próximo contato. Sem mapa, a dívida governa a casa.' });
+    }
+    if (metrics.totalRemaining > 0) {
+      items.push({ tone: 'critical', title: 'Não negociar no impulso', text: 'Só aceite acordo que cabe no caixa. Um acordo quebrado machuca o nome duas vezes: pela dívida e pela perda de confiança.' });
+      items.push({ tone: 'warning', title: 'Priorizar nome sujo e juros', text: 'Comecem por credores que negativaram o CPF, juros maiores ou risco de cobrança agressiva. Pequenas quitações rápidas também dão ânimo.' });
+    }
+    if (metrics.upcoming > 0) {
+      items.push({ tone: 'warning', title: 'Ações vencendo hoje', text: metrics.upcoming + ' credor(es) precisam de contato ou revisão. A disciplina do calendário é parte da cura financeira.' });
+    }
+    if (metrics.progress >= 100 && debts.length) {
+      items.push({ tone: 'ok', title: 'Nome em restauração', text: 'Todos os registros estão quitados. O próximo passo é guardar comprovantes, acompanhar baixa nos birôs e reconstruir crédito sem pressa.' });
+    }
+    if (metrics.progress > 0 && metrics.progress < 100) {
+      items.push({ tone: 'ok', title: 'Progresso real', text: 'Vocês já pagaram ' + toMoney(metrics.totalPaid) + '. Honrar compromissos em ordem abre espaço para paz e prosperidade.' });
+    }
+    items.push({ tone: 'neutral', title: 'Princípio de teshuvá financeira', text: 'Reparar começa com verdade, plano e retorno ao caminho correto. Sem culpa estéril: cada credor cadastrado vira um passo de libertação.' });
+    renderWisdomCards(debtRabbiGuidance, items, 'Cadastre os credores para receber o roteiro de negociação.');
+  }
+
+  function refreshDebtFreedom() {
+    const metrics = getDebtMetrics();
+    if (debtKpiCreditors) debtKpiCreditors.textContent = String(debts.length);
+    if (debtKpiOriginal) debtKpiOriginal.textContent = toMoney(metrics.totalOriginal);
+    if (debtKpiNegotiated) debtKpiNegotiated.textContent = toMoney(metrics.totalNegotiated);
+    if (debtKpiPaid) debtKpiPaid.textContent = toMoney(metrics.totalPaid);
+    if (debtKpiRemaining) debtKpiRemaining.textContent = toMoney(metrics.totalRemaining);
+    if (debtKpiUpcoming) debtKpiUpcoming.textContent = String(metrics.upcoming);
+    if (debtCleanProgress) debtCleanProgress.textContent = metrics.progress + '%';
+
+    let tone = 'neutral';
+    let label = 'Mapeamento necessário';
+    let message = 'Cadastre cada credor, mesmo valores pequenos. O primeiro milagre financeiro aqui é trocar vergonha por ordem.';
+    if (debts.length && metrics.progress >= 100) {
+      tone = 'ok';
+      label = 'Nome limpo encaminhado';
+      message = 'Pendências quitadas no controle. Agora guardem comprovantes, acompanhem baixa nos órgãos de crédito e reconstruam limite com prudência.';
+    } else if (metrics.totalRemaining > 0 && metrics.progress >= 40) {
+      tone = 'warning';
+      label = 'Saída em andamento';
+      message = 'Já existe progresso. O foco agora é não quebrar acordos e transformar pagamentos em rotina do casal.';
+    } else if (metrics.totalRemaining > 0) {
+      tone = 'critical';
+      label = 'Vermelho mapeado';
+      message = 'A dívida ainda pesa. A prioridade é negociar com verdade, pagar o que cabe e impedir novos atrasos.';
+    }
+    if (debtStatusPill) {
+      debtStatusPill.className = 'wisdom-pill ' + tone;
+      debtStatusPill.textContent = label;
+    }
+    if (debtFreedomMessage) debtFreedomMessage.textContent = message;
+
+    if (debtNegotiationChart) {
+      if (!debts.length) {
+        drawEmptyCanvas(debtNegotiationChart, 'Cadastre credores para ver a evolução.');
+      } else {
+        renderHorizontalBarChart(debtNegotiationChart, [
+          { label: 'Original', value: metrics.totalOriginal },
+          { label: 'Negociado', value: metrics.totalNegotiated },
+          { label: 'Pago', value: metrics.totalPaid },
+          { label: 'Falta', value: metrics.totalRemaining }
+        ], 'Sem dívidas cadastradas');
+      }
+    }
+    if (debtStatusChart) {
+      const grouped = {};
+      debts.forEach(function (debt) {
+        const key = String(debt.status || 'Atrasado');
+        grouped[key] = (grouped[key] || 0) + 1;
+      });
+      const rows = Object.keys(grouped).map(function (key) {
+        return { label: key, value: grouped[key] };
+      });
+      renderHorizontalBarChart(debtStatusChart, rows, 'Sem status cadastrados');
+    }
+    renderDebtGuidance(metrics);
+    renderDebtTable();
+  }
+
+  function handleDebtSubmit(event) {
+    event.preventDefault();
+    const creditor = debtCreditorInput ? String(debtCreditorInput.value || '').trim() : '';
+    const originalAmount = Number(debtOriginalAmountInput ? debtOriginalAmountInput.value : 0);
+    const negotiatedAmount = Number(debtNegotiatedAmountInput ? debtNegotiatedAmountInput.value : 0);
+    const paidAmount = Number(debtPaidAmountInput ? debtPaidAmountInput.value : 0);
+    const status = debtStatusInput ? String(debtStatusInput.value || 'Atrasado') : 'Atrasado';
+    if (!creditor || originalAmount <= 0) {
+      window.alert('Informe credor e valor original da dívida.');
+      return;
+    }
+    if (paidAmount < 0 || negotiatedAmount < 0) {
+      window.alert('Valores não podem ser negativos.');
+      return;
+    }
+    const now = new Date().toISOString();
+    const debt = {
+      id: editingDebtId || generateId(),
+      creditor: creditor,
+      originalAmount: originalAmount,
+      negotiatedAmount: negotiatedAmount,
+      paidAmount: paidAmount,
+      dueDate: debtDueDateInput ? debtDueDateInput.value : '',
+      nextActionDate: debtNextActionDateInput ? debtNextActionDateInput.value : '',
+      status: status,
+      priority: debtPriorityInput ? String(debtPriorityInput.value || 'Alta') : 'Alta',
+      contact: debtContactInput ? String(debtContactInput.value || '').trim() : '',
+      notes: debtNotesInput ? String(debtNotesInput.value || '').trim() : '',
+      createdAt: editingDebtId ? (debts.find(function (item) { return item.id === editingDebtId; }) || {}).createdAt || now : now,
+      updatedAt: now
+    };
+    if (status === 'Quitado') {
+      debt.paidAmount = getDebtBaseAmount(debt);
+    }
+    if (editingDebtId) {
+      debts = debts.map(function (item) { return item.id === editingDebtId ? debt : item; });
+    } else {
+      debts.push(debt);
+    }
+    saveDebts();
+    resetDebtForm();
+    refreshDebtFreedom();
+  }
+
+  function handleDebtTableClick(event) {
+    if (!event || !event.target) return;
+    const editButton = event.target.closest('[data-edit-debt]');
+    if (editButton) {
+      startDebtEdit(editButton.getAttribute('data-edit-debt'));
+      return;
+    }
+    const deleteButton = event.target.closest('[data-delete-debt]');
+    if (deleteButton) {
+      const debtId = deleteButton.getAttribute('data-delete-debt');
+      if (!window.confirm('Excluir este credor do plano?')) return;
+      debts = debts.filter(function (item) { return item.id !== debtId; });
+      saveDebts();
+      refreshDebtFreedom();
+    }
+  }
+
   function renderPersonalTable(list) {
     if (!personalTableBody) return;
     if (!list.length) {
@@ -1260,7 +1551,13 @@
     loadPersonalFilters();
     loadMetaCaixa();
     loadMetaHistory();
+    loadDebts();
+    resetDebtForm();
     if (personalForm) personalForm.addEventListener('submit', handlePersonalSubmit);
+    if (debtForm) debtForm.addEventListener('submit', handleDebtSubmit);
+    if (debtCancelEditBtn) debtCancelEditBtn.addEventListener('click', function () {
+      resetDebtForm();
+    });
     if (personalCancelEditBtn) personalCancelEditBtn.addEventListener('click', function () {
       resetPersonalForm();
     });
@@ -1307,6 +1604,7 @@
     });
     if (exportReportPdfBtn) exportReportPdfBtn.addEventListener('click', handleExportReportPdf);
     if (personalTableBody) personalTableBody.addEventListener('click', handlePersonalTableClick);
+    if (debtTableBody) debtTableBody.addEventListener('click', handleDebtTableClick);
     if (clearPersonalTransactionsBtn) clearPersonalTransactionsBtn.addEventListener('click', handleClearTransactions);
     tabButtons.forEach(function (button) {
       button.setAttribute('role', 'tab');
@@ -1318,8 +1616,10 @@
     window.addEventListener('afterprint', restorePrintReport);
     window.addEventListener('resize', function () {
       refreshPersonalFinance();
+      refreshDebtFreedom();
     });
     refreshPersonalFinance();
+    refreshDebtFreedom();
   }
 
   init();

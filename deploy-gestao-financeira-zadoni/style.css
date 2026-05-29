@@ -775,6 +775,46 @@ canvas {
   font-weight: 800;
 }
 
+.debt-hero {
+  border-left-color: #991b1b;
+}
+
+.debt-status-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 12px;
+  font-weight: 800;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.debt-status-badge.atrasado {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.debt-status-badge.em-negociação {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.debt-status-badge.acordo-ativo {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.debt-status-badge.quitado {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.debt-status-badge.contestar {
+  background: #f1f5f9;
+  color: #334155;
+}
+
 .personal-type {
   display: inline-block;
   padding: 2px 8px;

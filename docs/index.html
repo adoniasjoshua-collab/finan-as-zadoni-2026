@@ -19,6 +19,7 @@
   <nav class="tabs no-print" aria-label="Navegação principal">
     <button type="button" class="tab is-active" data-tab-target="personal">Painel Financeiro</button>
     <button type="button" class="tab" data-tab-target="prosperity">Conselho Zadoni</button>
+    <button type="button" class="tab" data-tab-target="debts">Plano Nome Limpo</button>
   </nav>
 
   <main class="container">
@@ -256,6 +257,135 @@
       <section class="card">
         <h2>Leitura Judaica da Prosperidade</h2>
         <div id="wisdomPrinciples" class="principles-grid"></div>
+      </section>
+    </section>
+
+    <section class="screen" data-screen="debts">
+      <section class="card wisdom-hero debt-hero">
+        <div>
+          <span id="debtStatusPill" class="wisdom-pill neutral">Mapeamento necessário</span>
+          <h2>Plano Nome Limpo</h2>
+          <p id="debtFreedomMessage">Cadastre cada credor, mesmo valores pequenos. O primeiro milagre financeiro aqui é trocar vergonha por ordem.</p>
+        </div>
+        <div class="wisdom-score">
+          <span>Crédito limpo</span>
+          <strong id="debtCleanProgress">0%</strong>
+        </div>
+      </section>
+
+      <section class="card no-print">
+        <h2>Credor e Negociação</h2>
+        <p class="muted">Registre dívidas antigas, acordos, próximos contatos e pagamentos até zerar pendências.</p>
+        <form id="debtForm" class="grid">
+          <label>
+            Credor
+            <input type="text" id="debtCreditor" placeholder="Ex: banco, loja, cartão" required />
+          </label>
+          <label>
+            Valor original (R$)
+            <input type="number" id="debtOriginalAmount" min="0.01" step="0.01" required />
+          </label>
+          <label>
+            Valor negociado (R$)
+            <input type="number" id="debtNegotiatedAmount" min="0" step="0.01" placeholder="Opcional" />
+          </label>
+          <label>
+            Valor já pago (R$)
+            <input type="number" id="debtPaidAmount" min="0" step="0.01" />
+          </label>
+          <label>
+            Vencimento original
+            <input type="date" id="debtDueDate" />
+          </label>
+          <label>
+            Próxima ação
+            <input type="date" id="debtNextActionDate" />
+          </label>
+          <label>
+            Status
+            <select id="debtStatus" required>
+              <option value="Atrasado">Atrasado</option>
+              <option value="Em negociação">Em negociação</option>
+              <option value="Acordo ativo">Acordo ativo</option>
+              <option value="Quitado">Quitado</option>
+              <option value="Contestar">Contestar</option>
+            </select>
+          </label>
+          <label>
+            Prioridade
+            <select id="debtPriority">
+              <option value="Alta">Alta</option>
+              <option value="Média">Média</option>
+              <option value="Baixa">Baixa</option>
+            </select>
+          </label>
+          <label>
+            Contato do credor
+            <input type="text" id="debtContact" placeholder="Telefone, WhatsApp, e-mail" />
+          </label>
+          <label>
+            Observações do acordo
+            <input type="text" id="debtNotes" placeholder="Parcelas, proposta, protocolo" />
+          </label>
+          <div class="actions">
+            <button type="submit" id="debtSubmitBtn">Salvar Credor</button>
+            <button type="button" id="debtCancelEdit" class="ghost" hidden>Cancelar edição</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Mapa da Dívida</h2>
+        <div class="kpis">
+          <article><span>Credores</span><strong id="debtKpiCreditors">0</strong></article>
+          <article><span>Total original</span><strong id="debtKpiOriginal">R$ 0,00</strong></article>
+          <article><span>Total negociado</span><strong id="debtKpiNegotiated">R$ 0,00</strong></article>
+          <article><span>Total pago</span><strong id="debtKpiPaid">R$ 0,00</strong></article>
+          <article><span>Falta quitar</span><strong id="debtKpiRemaining">R$ 0,00</strong></article>
+          <article><span>Próximas ações</span><strong id="debtKpiUpcoming">0</strong></article>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Evolução das Negociações</h2>
+        <div class="dash-grid">
+          <div class="chart-card">
+            <h3 class="chart-title">Original, Negociado, Pago e Falta</h3>
+            <canvas id="debtNegotiationChart" height="240"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3 class="chart-title">Dívidas por Status</h3>
+            <canvas id="debtStatusChart" height="240"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Roteiro de Libertação Financeira</h2>
+        <div id="debtRabbiGuidance" class="wisdom-list"></div>
+      </section>
+
+      <section class="card">
+        <h2>Credores Cadastrados</h2>
+        <div class="table-wrap">
+          <table id="debtTable" class="mobile-card-table">
+            <thead>
+              <tr>
+                <th>Credor</th>
+                <th>Status</th>
+                <th>Original</th>
+                <th>Negociado</th>
+                <th>Pago</th>
+                <th>Falta</th>
+                <th>Próxima ação</th>
+                <th class="no-print">Ação</th>
+              </tr>
+            </thead>
+            <tbody id="debtTableBody">
+              <tr><td colspan="8">Nenhum credor cadastrado.</td></tr>
+            </tbody>
+          </table>
+        </div>
       </section>
     </section>
   </main>
