@@ -6,11 +6,16 @@
   const STORAGE_META_CAIXA = 'zadoni_meta_caixa_v1';
   const STORAGE_META_HISTORY = 'zadoni_meta_history_v1';
   const STORAGE_DEBTS = 'zadoni_debts_v1';
+  const STORAGE_PERSONAL_CATEGORIES = 'zadoni_personal_categories_v1';
   const ZadoniModules = window.ZadoniModules || {};
   const CalcModule = ZadoniModules.calc || {};
   const DataModule = ZadoniModules.data || {};
   const UiModule = ZadoniModules.ui || {};
   const PERSONAL_HEALTH_THRESHOLDS = { red: 45, yellow: 70 };
+  const DEFAULT_PERSONAL_CATEGORIES = {
+    entry: ['Renda', 'Outros'],
+    exit: ['Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Educação', 'Lazer', 'Dívidas', 'Recompra para negócio', 'Tráfego pago', 'Roupas', 'Beleza', 'Cuidados pessoais', 'Dízimos', 'Investimentos', 'Doações', 'Oferta', 'Outros']
+  };
   const GIVING_CATEGORIES = ['Dízimos', 'Doações', 'Oferta'];
   const INVESTMENT_CATEGORIES = ['Investimentos'];
   const LIFESTYLE_CATEGORIES = ['Roupas', 'Beleza', 'Cuidados pessoais', 'Lazer'];
@@ -23,6 +28,9 @@
   const personalDateInput = document.getElementById('personalDate');
   const personalTypeInput = document.getElementById('personalType');
   const personalCategoryInput = document.getElementById('personalCategory');
+  const newPersonalCategoryTypeInput = document.getElementById('newPersonalCategoryType');
+  const newPersonalCategoryNameInput = document.getElementById('newPersonalCategoryName');
+  const addPersonalCategoryBtn = document.getElementById('addPersonalCategory');
   const personalAmountInput = document.getElementById('personalAmount');
   const personalNotesInput = document.getElementById('personalNotes');
   const personalUseBusinessFundsInput = document.getElementById('personalUseBusinessFunds');
@@ -124,6 +132,7 @@
   let metaCaixaMin = 5000; // valor mínimo recomendado para meta caixa
   let reservedAmount = 0; // indicador de valor reservado (apenas sinalização local)
   let metaHistory = [];
+  let customPersonalCategories = { entry: [], exit: [] };
   let printOpenedDetails = [];
 
   function generateId() {
@@ -171,6 +180,129 @@
     const text = String(value || '').trim();
     if (!text || text === '-') return '';
     return text;
+  }
+
+  function normalizeCategoryName(value) {
+    return String(value || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function getTypeLabel(type) {
+    return type === 'entry' ? 'Entrada' : 'Saída';
+  }
+
+  function normalizeCategoryType(value) {
+    return value === 'exit' ? 'exit' : 'entry';
+  }
+
+  function mergeCategoryLists(lists) {
+    const seen = {};
+    const merged = [];
+    (lists || []).forEach(function (list) {
+      (Array.isArray(list) ? list : []).forEach(function (category) {
+        const name = normalizeCategoryName(category);
+        const key = name.toLocaleLowerCase('pt-BR');
+        if (!name || seen[key]) return;
+        seen[key] = true;
+        merged.push(name);
+      });
+    });
+    return merged;
+  }
+
+  function getPersonalCategoriesForType(type, selectedCategory) {
+    const current = normalizeCategoryName(selectedCategory);
+    const selectedType = type === 'entry' || type === 'exit' ? type : '';
+    const lists = selectedType
+      ? [DEFAULT_PERSONAL_CATEGORIES[selectedType], customPersonalCategories[selectedType]]
+      : [
+        DEFAULT_PERSONAL_CATEGORIES.entry,
+        customPersonalCategories.entry,
+        DEFAULT_PERSONAL_CATEGORIES.exit,
+        customPersonalCategories.exit
+      ];
+    const categories = mergeCategoryLists(lists);
+    if (current && categories.indexOf(current) < 0) categories.push(current);
+    return categories;
+  }
+
+  function renderPersonalCategoryOptions(selectedCategory) {
+    if (!personalCategoryInput) return;
+    const current = selectedCategory === undefined ? personalCategoryInput.value : selectedCategory;
+    const type = personalTypeInput ? personalTypeInput.value : '';
+    const categories = getPersonalCategoriesForType(type, current);
+    personalCategoryInput.innerHTML = '';
+
+    const emptyOption = document.createElement('option');
+    emptyOption.value = '';
+    emptyOption.textContent = 'Selecione';
+    personalCategoryInput.appendChild(emptyOption);
+
+    categories.forEach(function (category) {
+      const option = document.createElement('option');
+      option.value = category;
+      option.textContent = category;
+      personalCategoryInput.appendChild(option);
+    });
+
+    personalCategoryInput.value = categories.indexOf(current) >= 0 ? current : '';
+  }
+
+  function syncNewCategoryTypeWithTransactionType() {
+    if (!newPersonalCategoryTypeInput || !personalTypeInput) return;
+    if (personalTypeInput.value === 'entry' || personalTypeInput.value === 'exit') {
+      newPersonalCategoryTypeInput.value = personalTypeInput.value;
+    }
+  }
+
+  function savePersonalCategories() {
+    const payload = {
+      entry: mergeCategoryLists([customPersonalCategories.entry]),
+      exit: mergeCategoryLists([customPersonalCategories.exit])
+    };
+    localStorage.setItem(STORAGE_PERSONAL_CATEGORIES, JSON.stringify(payload));
+  }
+
+  function loadPersonalCategories() {
+    try {
+      const raw = localStorage.getItem(STORAGE_PERSONAL_CATEGORIES);
+      const parsed = raw ? JSON.parse(raw) : {};
+      customPersonalCategories = {
+        entry: mergeCategoryLists([parsed && parsed.entry]),
+        exit: mergeCategoryLists([parsed && parsed.exit])
+      };
+    } catch (error) {
+      localStorage.removeItem(STORAGE_PERSONAL_CATEGORIES);
+      customPersonalCategories = { entry: [], exit: [] };
+    }
+  }
+
+  function handlePersonalTypeChange() {
+    renderPersonalCategoryOptions('');
+    syncNewCategoryTypeWithTransactionType();
+  }
+
+  function handleAddPersonalCategory() {
+    const type = normalizeCategoryType(newPersonalCategoryTypeInput ? newPersonalCategoryTypeInput.value : 'entry');
+    const category = normalizeCategoryName(newPersonalCategoryNameInput ? newPersonalCategoryNameInput.value : '');
+    if (!category) {
+      window.alert('Informe o nome da nova categoria.');
+      return;
+    }
+
+    const exists = getPersonalCategoriesForType(type).some(function (item) {
+      return item.toLocaleLowerCase('pt-BR') === category.toLocaleLowerCase('pt-BR');
+    });
+    if (exists) {
+      window.alert('Esta categoria já existe em ' + getTypeLabel(type) + '.');
+      return;
+    }
+
+    customPersonalCategories[type].push(category);
+    savePersonalCategories();
+    if (personalTypeInput) personalTypeInput.value = type;
+    renderPersonalCategoryOptions(category);
+    if (newPersonalCategoryNameInput) newPersonalCategoryNameInput.value = '';
+    if (personalAmountInput && typeof personalAmountInput.focus === 'function') personalAmountInput.focus();
   }
 
   function renderDescriptionDetails(description, summaryLabel, extraClass) {
@@ -308,6 +440,8 @@
     if (personalForm) personalForm.reset();
     resetPersonalFormMode();
     if (personalDateInput) personalDateInput.value = new Date().toISOString().slice(0, 10);
+    renderPersonalCategoryOptions('');
+    syncNewCategoryTypeWithTransactionType();
     if (personalUseBusinessFundsInput) personalUseBusinessFundsInput.checked = false;
     if (personalFundingSourceInput) personalFundingSourceInput.value = '';
   }
@@ -321,7 +455,9 @@
     editingPersonalId = record.id;
     if (personalDateInput) personalDateInput.value = toIsoDate(record.date || record.createdAt);
     if (personalTypeInput) personalTypeInput.value = record.type || '';
+    renderPersonalCategoryOptions(record.category || '');
     if (personalCategoryInput) personalCategoryInput.value = record.category || '';
+    syncNewCategoryTypeWithTransactionType();
     if (personalAmountInput) personalAmountInput.value = Number(record.amount || 0).toFixed(2);
     if (personalNotesInput) personalNotesInput.value = record.notes || '';
     if (personalUseBusinessFundsInput) personalUseBusinessFundsInput.checked = !!record.usesBusinessFunds;
@@ -1711,6 +1847,8 @@
 
   function init() {
     if (personalDateInput) personalDateInput.value = new Date().toISOString().slice(0, 10);
+    loadPersonalCategories();
+    renderPersonalCategoryOptions('');
     loadPersonalTransactions();
     loadPersonalFilters();
     loadMetaCaixa();
@@ -1718,6 +1856,8 @@
     loadDebts();
     resetDebtForm();
     if (personalForm) personalForm.addEventListener('submit', handlePersonalSubmit);
+    if (personalTypeInput) personalTypeInput.addEventListener('change', handlePersonalTypeChange);
+    if (addPersonalCategoryBtn) addPersonalCategoryBtn.addEventListener('click', handleAddPersonalCategory);
     if (debtForm) debtForm.addEventListener('submit', handleDebtSubmit);
     if (debtCancelEditBtn) debtCancelEditBtn.addEventListener('click', function () {
       resetDebtForm();

@@ -170,6 +170,18 @@ input[readonly] {
   align-items: end;
 }
 
+.category-manager {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  align-items: end;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
 button {
   border: 0;
   border-radius: 10px;
@@ -1144,6 +1156,10 @@ th {
 
   .filters {
     grid-template-columns: repeat(3, minmax(160px, 220px)) 1fr;
+  }
+
+  .category-manager {
+    grid-template-columns: minmax(140px, 180px) minmax(220px, 1fr) auto;
   }
 
   .kpis {
